@@ -1,0 +1,16 @@
+<html>
+<head>
+    <link rel="icon" href="/favicon.png">
+
+    <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="http://ppl.wdsserve.com/1.0/ppl/ppl.js"></script>
+    <script type="text/javascript" src="/js/table.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://ppl.wdsserve.com/1.0/ppl/ppl.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+</head>
+<body>
+    {{#inError}}<div id="error" class="alert alert-warning"><b>Error in repository update: </b>{{errorMessage}}</div>{{/inError}}
+    <a href="/dashboard">Dashboard</a> | <a href="/">Servers</a> | <a href="/elb">Load Balancers</a> | <a href="/rds">Databases</a> | <a href="/route53">Domain Names</a> | <a href="/volumes">Volumes</a> | <a href="/caches">Caches</a> | <a href="/checks">Advisor</a> | <a href="/api/ssh">SSH Config</a><br/>
+    <span>Data last refreshed at {{lastRefreshTime}} UTC</span>{{#refreshAvailable}} | <span style="font-size:1em;"><a href="/update">Refresh now</a></span>{{/refreshAvailable}}<br />

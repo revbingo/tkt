@@ -1,0 +1,42 @@
+{{> header }}
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text id">Name</th>
+                <th class="filter:text">DNS Name</th>
+                <th class="filter:select">Region</th>
+                <th class="filter:select">Account</th>
+                <th class="filter:text">HTTP Port</th>
+                <th class="filter:text">HTTPS Port</th>
+                <th class="filter:select"># instances</th>
+                <th class="filter:text">Instances</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#loadBalancers}}
+            <tr>
+                <td>{{name}}</td>
+                <td>{{dnsName}}</td>
+                <td>{{location.region}}</td>
+                <td>{{location.profile.name}}</td>
+                <td>{{httpPort}}</td>
+                <td>{{httpsPort}}</td>
+                <td>{{numberOfInstances}}</td>
+                <td>{{#instances}}<a href="/?id={{id}}">{{name}}</a><br />{{/instances}}</td>
+            </tr>
+        {{/loadBalancers}}
+        </tbody>
+    </table>
+{{> footer }}

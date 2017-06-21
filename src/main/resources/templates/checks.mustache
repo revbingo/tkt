@@ -1,0 +1,53 @@
+{{> header }}
+
+    <style>
+        tr.Red {
+            background-color: #ffeeee !important;
+        }
+
+        tr.Yellow {
+            background-color: #fafbd8 !important;
+        }
+
+        tr.Green {
+            background-color: #d9f3d1 !important;
+        }
+    </style>
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text">Check</th>
+                <th class="filter:select">Resource Type</th>
+                <th class="filter:text id">Resource Id</th>
+                <th class="filter:select">Region</th>
+                <th class="">Description</th>
+                <th class="">Saving</th>
+                <th class="filter:select">Rating</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+            {{#advisorResults}}
+            <tr class="{{rating}}">
+                <td>{{check.name}}</td>
+                <td>{{resourceType}}</td>
+                <td>{{resourceId}}</td>
+                <td>{{region}}</td>
+                <td>{{description}}</td>
+                <td>{{saving}}</td>
+                <td>{{rating}}</td>
+            </tr>
+            {{/advisorResults}}
+        </tbody>
+    </table>
+{{> footer }}

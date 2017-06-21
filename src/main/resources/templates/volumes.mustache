@@ -1,0 +1,45 @@
+{{> header }}
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text">Name</th>
+                <th class="filter:text id">ID</th>
+                <th class="filter:select">Region</th>
+                <th class="filter:select">State</th>
+                <th class="filter:select">Type</th>
+                <th class="filter:select">Size (Gb)</th>
+                <th class="filter:select">IOPS</th>
+                <th class="filter:text">Instance</th>
+                <th class="filter:select">Account</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#volumes}}
+            <tr>
+                <td>{{name}}</td>
+                <td>{{id}}</td>
+                <td>{{location.region}}</td>
+                <td>{{state}}</td>
+                <td>{{type}}</td>
+                <td>{{size}}</td>
+                <td>{{iops}}</td>
+                <td>{{#attachedInstanceIds}}<a href="/?id={{.}}">{{.}}</a>{{/attachedInstanceIds}}</td>
+                <td>{{location.profile.name}}</td>
+            </tr>
+        {{/volumes}}
+        </tbody>
+    </table>
+{{> footer }}

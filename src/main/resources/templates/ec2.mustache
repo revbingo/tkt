@@ -1,0 +1,131 @@
+{{> header }}
+    <a href="#UsedReservations">Used Reservations</a> |
+    <a href="#UnusedReservations">Unused Reservations</a><br />
+    <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text">Name</th>
+                <th class="filter:text">Clients</th>
+                <th class="filter:select">Capability</th>
+                <th class="filter:select">Environment</th>
+                <th class="filter:text id">Instance ID</th>
+                <th class="filter:select">Size</th>
+                <th class="filter:select">Region</th>
+                <th class="filter:select">Zone</th>
+                <th class="filter:select">O/S</th>
+                <th class="filter:text">Public DNS</th>
+                <th class="filter:select">VPC</th>
+                <th class="filter:select">State</th>
+                <th class="filter:select">Account</th>
+                <th class="filter:select">Reserved</th>
+                <th class="filter:none">Cost</th>
+                <th class="filter:none">LaunchDate</th>
+                <th class="filter:none">Notices</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <!-- these will be populated dynamically with select boxes -->
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#instances}}
+            <tr>
+                <td style="white-space:nowrap">{{name}}</td>
+                <td style="white-space:nowrap">{{client}}</td>
+                <td style="white-space:nowrap">{{capability}}</td>
+                <td style="white-space:nowrap">{{environment}}</td>
+                <td>{{instanceId}}</td>
+                <td>{{instanceType}}</td>
+                <td>{{location.region}}</td>
+                <td>{{zone}}</td>
+                <td>{{platform}}</td>
+                <td>{{shortDnsName}}</td>
+                <td>{{isVpc}}</td>
+                <td>{{state.name}}</td>
+                <td>{{location.profile.name}}</td>
+                <td>{{matched}}</td>
+                <td>{{price}}</td>
+                <td>{{launchDate}}</td>
+                <td>{{advisoryNotices.size}}</td>
+        {{/instances}}
+        </tbody>
+    </table>
+
+    <p>&nbsp;</p>
+    <a name="UnusedReservations"></a><p style="font-size:1.4em;">Unused Reserved Instances:</p>
+
+    <table class="table">
+        <tr>
+            <th>ID</th>
+            <th>Size</th>
+            <th>Region</th>
+            <th>Account</th>
+            <th>Avail. Zone</th>
+            <th>Unused</th>
+            <th>O/S</th>
+            <th>VPC</th>
+            <th>End</th>
+        </tr>
+
+        {{#unmatchedReservations}}
+            <tr>
+                <td>{{id}}</td>
+                <td>{{instanceType}}</td>
+                <td>{{location.region}}</td>
+                <td>{{location.profile.name}}</td>
+                <td>{{availabilityZone}}</td>
+                <td>{{unmatchedCount}}/{{instanceCount}}</td>
+                <td>{{productDescription}}</td>
+                <td>{{inVpc}}</td>
+                <td>{{end}}</td>
+            </tr>
+        {{/unmatchedReservations}}
+    </table>
+
+    <a name="UsedReservations"></a><p style="font-size:1.4em;">Used Reserved Instances:</p>
+
+    <table class="table">
+        <tr>
+            <th>ID</th>
+            <th>Size</th>
+            <th>Region</th>
+            <th>Account</th>
+            <th>Avail. Zone</th>
+            <th>Used</th>
+            <th>O/S</th>
+            <th>VPC</th>
+            <th>End</th>
+        </tr>
+	    {{#matchedReservations}}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{instanceType}}</td>
+            <td>{{location.region}}</td>
+            <td>{{location.profile.name}}</td>
+            <td>{{availabilityZone}}</td>
+            <td>{{matchedCount}}/{{instanceCount}}</td>
+            <td>{{productDescription}}</td>
+            <td>{{inVpc}}</td>
+            <td>{{end}}</td>
+        </tr>
+	    {{/matchedReservations}}
+    </table>
+{{> footer }}

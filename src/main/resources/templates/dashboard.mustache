@@ -1,0 +1,47 @@
+{{> header }}
+    <svg width="100%" height="100">
+        <rect class="bar" id="instanceCount"      x="{{unmatchedPct}}%" y="0" width="{{instancePct}}%" height="100%" fill="#728B9D" fill-opacity="1"><title>{{instanceCount}} instances</title></rect>
+        <rect class="bar" id="runningCount"       x="{{unmatchedPct}}%" y="0" width="{{runningPct}}%" height="100%" fill="#4B6A82" fill-opacity="0.75"><title>{{runningCount}} running</title></rect>
+        <rect class="bar" id="usedReservations"   x="{{unmatchedPct}}%" y="0" width="{{reservedPct}}%" height="100%" fill="#1D3D57" fill-opacity="0.75"><title>{{reservedCount}} used reservations</title></rect>
+        <rect class="bar" id="unusedReservations" x="0"                 y="0" width="{{unmatchedPct}}%" height="100%" fill="#B45E38" fill-opacity="1"><title>{{unmatchedCount}} unused reservations</title></rect>
+    </svg>
+
+    <div id="stats">
+        <div class="statBox">
+            <div class="stat">
+                {{instanceCount}}
+            </div>
+            <div class="commentary">instances</div>
+        </div>
+        <div class="statBox">
+            <div class="stat">
+                {{runningCount}}
+            </div>
+            <div class="commentary">running</div>
+        </div>
+        <div class="statBox">
+            <div class="stat">
+                {{reservedCount}}
+            </div>
+            <div class="commentary">used reservations</div>
+        </div>
+        <div class="statBox">
+            <div class="stat">
+                {{unmatchedCount}}
+            </div>
+            <div class="commentary">unmatched reservations</div>
+        </div>
+        <div class="statBox">
+            <div class="stat">
+                {{vpcCount}}
+            </div>
+            <div class="commentary">in VPC</div>
+        </div>
+        <div class="statBox">
+            <div class="stat fitText">
+                ${{formattedCost}}
+            </div>
+            <div class="commentary">per hour</div>
+        </div>
+    </div>
+{{> footer }}

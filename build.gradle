@@ -1,0 +1,107 @@
+group 'com.revbingo'
+version '1.0-SNAPSHOT'
+
+buildscript {
+
+    ext {
+        awsVersion="1.11.74"
+        kotlinVersion="1.1.1"
+        spekVersion="1.1.0-beta3"
+        junitVersion="1.0.0-M3"
+    }
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.junit.platform:junit-platform-gradle-plugin:$junitVersion"
+        classpath "io.spring.gradle:dependency-management-plugin:0.5.4.RELEASE"
+    }
+}
+
+defaultTasks 'junitPlatformTest'
+
+apply plugin: 'kotlin'
+apply plugin: 'org.junit.platform.gradle.plugin'
+apply plugin: "io.spring.dependency-management"
+
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+    maven { url "http://dl.bintray.com/jetbrains/spek" }
+    maven { url "http://dl.bintray.com/kotlin/exposed" }
+    maven { url "http://dl.bintray.com/kotlin/kotlin-eap-1.1" }
+
+}
+
+dependencyManagement {
+    imports {
+	    mavenBom "com.amazonaws:aws-java-sdk-bom:$awsVersion"
+    }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.14"
+    compile "com.amazonaws:aws-java-sdk-core"
+    compile "com.amazonaws:aws-java-sdk-ec2"
+    compile "com.amazonaws:aws-java-sdk-elasticloadbalancing"
+    compile "com.amazonaws:aws-java-sdk-rds"
+    compile "com.amazonaws:aws-java-sdk-route53"
+    compile "com.amazonaws:aws-java-sdk-support"
+    compile "com.amazonaws:aws-java-sdk-elasticache"
+    compile 'com.sparkjava:spark-core:2.5.3'
+    compile 'com.sparkjava:spark-template-mustache:2.3'
+    compile 'com.jayway.jsonpath:json-path:2.2.0'
+    compile 'org.slf4j:slf4j-simple:1.7.21'
+    compile 'net.sf.jopt-simple:jopt-simple:6.0-alpha-1'
+    compile 'com.h2database:h2:1.4.193'
+    compile 'org.jetbrains.exposed:exposed:0.7.6'
+    testCompile 'com.natpryce:hamkrest:1.2.3.0'
+    testCompile "org.jetbrains.spek:spek-api:$spekVersion"
+    testCompile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
+    testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
+    testCompile "com.nhaarman:mockito-kotlin:1.1.0"
+    testCompile("net.sourceforge.htmlunit:htmlunit:2.25") {
+        exclude group:'org.eclipse.jetty.websocket', module: 'websocket-client'
+    }
+}
+
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
+}
+junitPlatform {
+	platformVersion "$junitVersion"
+}
+
+jar {
+  archiveName = "tkt.jar"
+
+  manifest { 
+    attributes "Main-Class": "com.revbingo.web.ApplicationKt"
+  }  
+
+  from {
+    configurations.compile.collect {
+        it.isDirectory() ? it : zipTree(it)
+    }
+  }
+}
+
+task startapp(type: JavaExec, dependsOn: 'jar') {
+    classpath = files("build/libs/tkt.jar")
+    main = "com.revbingo.web.ApplicationKt"
+}
+
+task buildDocker(type: Exec, dependsOn: 'jar') {
+    commandLine "docker", "build", "-t", "tkt:latest", "."
+}
+
+task fetchPricingData(type: Exec) {
+    commandLine "wget", "https://raw.githubusercontent.com/powdahound/ec2instances.info/master/www/instances.json", "-O", "data/instances.json"
+}

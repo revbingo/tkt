@@ -1,0 +1,42 @@
+{{> header }}
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text id">Name</th>
+                <th class="filter:text">Endpoint</th>
+                <th class="filter:select">Region</th>
+                <th class="filter:select">Size</th>
+                <th class="filter:select">Engine</th>
+                <th class="filter:select">MultiAZ</th>
+                <th class="filter:select">Storage</th>
+                <th class="filter:select">Account</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#databases}}
+            <tr>
+                <td>{{name}}</td>
+                <td>{{endpoint}}</td>
+                <td>{{location.region}}</td>
+                <td>{{type}}</td>
+                <td>{{engine}} {{engineVersion}}</td>
+                <td>{{multiAZ}}</td>
+                <td>{{storage}} Gb</td>
+                <td>{{location.profile.name}}</td>
+            </tr>
+        {{/databases}}
+        </tbody>
+    </table>
+{{> footer }}

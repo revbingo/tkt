@@ -1,0 +1,30 @@
+{{> header }}
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text id">DNS Name</th>
+                <th class="filter:select">Type</th>
+                <th class="filter:text">Target</th>
+                <th class="filter:none">TTL</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#domainNames}}
+            <tr>
+                <td>{{dnsName}}</td>
+                <td>{{type}}</td>
+                <td>{{target}}</td>
+                <td>{{ttl}}</td>
+            </tr>
+        {{/domainNames}}
+        </tbody>
+    </table>
+{{> footer }}
