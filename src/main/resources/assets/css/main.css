@@ -1,5 +1,28 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans');
+
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+*:before, *:after {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
 body {
     margin: 10px;
+    font-family: "Open Sans", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.625;
+    color: #34495E;
+    background-color: #fff;
+}
+
+p {
+    margin: 0 0 11px;
 }
 
 #contribute {
@@ -11,6 +34,17 @@ body {
 /* Tables */
 table {
     font-size: 10pt;
+    border-collapse: collapse;
+    border-spacing: 0;
+    background-color: transparent;
+}
+
+th {
+    text-align: left;
+}
+
+td, th {
+    padding: 0;
 }
 
 tfoot {
@@ -20,6 +54,32 @@ tfoot {
 tbody > tr:hover {
     background-color: #ff8200 !important
 }
+
+.table {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 22px;
+}
+.table > thead > tr > th,
+.table > tbody > tr > th,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+    padding: 8px;
+    line-height: 1.625;
+    vertical-align: top;
+    border-top: 1px solid #d6dade;
+}
+.table > thead > tr > th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #d6dade;
+}
+.table > thead:first-child > tr:first-child > th {
+    border-top: 0;
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+
 /* Dashboard */
 .bar:hover {
     fill: #d6dade;
@@ -58,4 +118,62 @@ tbody > tr:hover {
 .commentary {
     font-size: 1em;
     font-weight: bold;
+}
+
+/* --------- */
+
+a {
+    background-color: transparent;
+    color: #3498DB;
+    text-decoration: none;
+}
+
+a:active, a:hover {
+    outline: 0;
+    color: #3498DB;
+    text-decoration: underline;
+}
+
+a:focus {
+    outline: thin dotted;
+    outline: 5px auto -webkit-focus-ring-color;
+    outline-offset: -2px;
+}
+
+b {
+    font-weight: bold;
+}
+
+input,select {
+    color: inherit;
+    font: inherit;
+    margin: 0;
+}
+
+input::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
+input {
+    line-height: normal;
+}
+
+input,select {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 22px;
+    border: 1px solid transparent;
+    border-radius: 0;
+}
+
+.alert-warning {
+    background-color: #fff2e5;
+    border-color: #ff8200;
+    color: #34495E;
 }
