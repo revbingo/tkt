@@ -27,10 +27,12 @@ file e.g. for debugging purposes.
 
 ## Deploying
 
-Run `./gradelw publish` to build and push the container. To deploy the service, run the /root/startTkt.sh script on
-ukwsutil01.  The Docker container requires a volume to be mounted to /opt/tkt/db for the database, and a single file
-mounted to /opt/tkt/credentials containing the credentials file.  This file should be in the format of a standard 
-.aws/credentials file.
+Run `./gradelw publish` to build the container. The Docker container requires a volume to be mounted to /opt/tkt/db for 
+the H2 database, and a single file mounted to /opt/tkt/credentials containing the credentials file.  This file should be 
+in the format of a standard .aws/credentials file.
+
+e.g.
+`docker run -d --name tkt -v /home/revbingo/tktdb:/opt/tkt/db -v /home/revbingo/.aws/credentials:/opt/tkt/credentials tkt:latest`
 
 ## Command line options
 
@@ -40,3 +42,5 @@ When starting the application from the command line, the following options are a
 * `-i <file>` - Location of data file containing pricing information
 * `--db <db>` - Location of H2 database files
 * `--no-advisor` - Disables fetching of Trusted Advisor checks
+
+If using Docker, you can change these in the Dockerfile
