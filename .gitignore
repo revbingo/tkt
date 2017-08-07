@@ -4,5 +4,5 @@
 build
 out
 .gradletasknamecache
-db
+/db
 .DS_Store

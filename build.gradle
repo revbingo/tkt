@@ -45,6 +45,7 @@ dependencyManagement {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.14"
     compile "com.amazonaws:aws-java-sdk-core"
     compile "com.amazonaws:aws-java-sdk-ec2"
@@ -60,7 +61,7 @@ dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:6.0-alpha-1'
     compile 'com.h2database:h2:1.4.193'
     compile 'org.jetbrains.exposed:exposed:0.7.6'
-    testCompile 'com.natpryce:hamkrest:1.2.3.0'
+    testCompile 'com.natpryce:hamkrest:1.4.0.0'
     testCompile "org.jetbrains.spek:spek-api:$spekVersion"
     testCompile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
     testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
