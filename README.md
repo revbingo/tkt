@@ -1,5 +1,8 @@
 # tkt (That Kotlin Thing)
 
+
+[![Build Status](https://travis-ci.org/revbingo/tkt.svg?branch=master)](https://travis-ci.org/revbingo/tkt)
+
 tkt provides a way to view your AWS estate across multiple regions and accounts in one handy place. This helps you quickly and 
 easily identify outsized or unused resources.
 
