@@ -1,20 +1,20 @@
 package com.revbingo.aws
 
-class ReservationMatcher {
+class ReservationMatcher(val reservations: List<CountedReservation>) {
 
-    fun match(riList: List<CountedReservation>, instanceList: List<MatchedInstance>): List<MatchedInstance> {
-        instanceList.filter { it.isRunning }.forEach { matchToReservation(it, riList) }
+    fun match(instanceList: List<MatchedInstance>): List<MatchedInstance> {
+        instanceList.filter { it.isRunning }.forEach { it.matchToReservation() }
 
         return instanceList
     }
 
-    fun matchToReservation(instance: MatchedInstance, reservations: List<CountedReservation>): Unit {
+    fun MatchedInstance.matchToReservation() {
         reservations.filter {
-            it.unmatchedCount > 0 && it.isActive
+            it.computeUnits > 0 && it.isActive
         }.forEach { reservation ->
-            if( instance.matches(reservation)) {
-                    reservation.unmatchedCount--
-                    instance.matched = true
+            if( this.matches(reservation) && reservation.computeUnits >= this.computeUnits) {
+                    reservation.computeUnits -= this.computeUnits
+                    this.matched = true
                     return
             }
         }

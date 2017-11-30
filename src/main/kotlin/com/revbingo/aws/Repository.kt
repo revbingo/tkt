@@ -1,7 +1,7 @@
 package com.revbingo.aws
 
+import com.revbingo.db.DatabaseAccessor
 import com.revbingo.web.logger
-import com.revbingo.db.*
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.newFixedThreadPoolContext
 import kotlinx.coroutines.experimental.runBlocking
@@ -84,7 +84,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     }
 
     private fun matchReservationsToInstances() {
-        ReservationMatcher().match(reservedInstances, instances)
+        ReservationMatcher(reservedInstances).match(instances)
     }
 
     private fun updateInstancesInLoadBalancers() {

@@ -45,7 +45,7 @@ fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String
     return instance
 }
 
-fun countedReservations(count: Int = 1, az: String = "", type: String = "",
+fun countedReservations(count: Int = 1, az: String = "", type: String = "t2.large",
                       regionScope: Boolean = false, region: String = "", state: String = "active",
                         product: String = "Linux/UNIX", unmatchedCount: Int = count): List<CountedReservation> {
     val ri = reservedInstance(count, az, type, regionScope, state, product)
@@ -53,7 +53,7 @@ fun countedReservations(count: Int = 1, az: String = "", type: String = "",
     return listOf(CountedReservation(ri, Location(Profile("Test"), region), unmatchedCount))
 }
 
-fun matchedInstances(count: Int = 1, az: String = "", type: String = "", state: String = "running",
+fun matchedInstances(count: Int = 1, az: String = "", type: String = "t2.large", state: String = "running",
               id: String = "noid", platform: String = "", vpcId: String? = null, dnsName: String? = null,
                      tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
                      privateIpAddress: String? = null, keyName: String? = "key", accountName: String = "test") : List<MatchedInstance> {

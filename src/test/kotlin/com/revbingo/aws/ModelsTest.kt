@@ -37,8 +37,43 @@ class ModelsTest : Spek({
             assertThat(unit.scope, equalTo("scope"))
             assertThat(unit.instanceCount, equalTo(10))
             assertThat(unit.instanceType, equalTo("m3.large"))
+            assertThat(unit.family, equalTo("m3"))
+            assertThat(unit.instanceSize, equalTo("large"))
+            assertThat(unit.computeUnits, equalTo(40f))
             assertThat(unit.end, equalTo(Date(12345L)))
             assertThat(unit.id, equalTo("theId"))
+        }
+
+        it("calculates compute units based on size of instances") {
+            var original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.micro")
+            var unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(0.5f))
+
+            original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.small")
+            unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(1f))
+
+            original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.medium")
+            unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(2f))
+
+            original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.large")
+            unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(4f))
+
+            original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.xlarge")
+            unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(8f))
+
+            original = reservedInstance(state = "active", az = "us-west-1a", count = 1, type = "t2.2xlarge")
+            unit = CountedReservation(original, testAccount)
+
+            assertThat(unit.computeUnits, equalTo(16f))
         }
 
         it("is immutable, even if underlying instance is changed") {
@@ -72,33 +107,6 @@ class ModelsTest : Spek({
             assertThat(unit.isActive, equalTo(false))
         }
 
-        it("strips the VPC from the product description") {
-            val original = reservedInstance(state = "active")
-            original.productDescription = "Linux/UNIX (Amazon VPC)"
-
-            val unit = CountedReservation(original, testAccount)
-
-            assertThat(unit.productDescription, equalTo("Linux/UNIX"))
-        }
-
-        it("marks as inVPC if product description contains (Amazon VPC)") {
-            val original = reservedInstance(state = "active")
-            original.productDescription = "Linux/UNIX (Amazon VPC)"
-
-            val unit = CountedReservation(original, testAccount)
-
-            assertThat(unit.inVpc, equalTo(true))
-        }
-
-        it("marks as not inVPC if product description does not contain (Amazon VPC)") {
-            val original = reservedInstance(state = "active")
-            original.productDescription = "Linux/UNIX"
-
-            val unit = CountedReservation(original, testAccount)
-
-            assertThat(unit.inVpc, equalTo(false))
-        }
-
         it("reports a matchedCount that is the original count minus unmatched") {
             val original = reservedInstance(state = "active", count = 10)
 
@@ -122,6 +130,8 @@ class ModelsTest : Spek({
             assertThat(unit.state, equalTo(InstanceState().withName("running")))
             assertThat(unit.availabilityZone, equalTo("us-west-1b"))
             assertThat(unit.instanceType, equalTo("m3.large"))
+            assertThat(unit.family, equalTo("m3"))
+            assertThat(unit.instanceSize, equalTo("large"))
             assertThat(unit.vpcId, equalTo("vpc123"))
             assertThat(unit.instanceId, equalTo("instanceId"))
             assertThat(unit.publicDnsName, equalTo("ec2-12-34-56-78.compute-1.amazonaws.com"))
@@ -292,13 +302,22 @@ class ModelsTest : Spek({
             assertThat(instanceAPS.zone, equalTo("c"))
         }
 
-        it("matches instance type if they're the same") {
-            val reservation = CountedReservation(reservedInstance(type = "m3.large"), testAccount)
+        it("matches instance type if they're exactly the same and scope is not Region") {
+            val reservation = CountedReservation(reservedInstance(type = "m3.large", regionScope = false), testAccount)
             val instanceLarge = MatchedInstance(instance(type = "m3.large"), testAccount)
             val instanceSmall = MatchedInstance(instance(type = "m3.small"), testAccount)
 
             assertThat(instanceLarge.sameTypeAs(reservation), equalTo(true))
             assertThat(instanceSmall.sameTypeAs(reservation), equalTo(false))
+        }
+
+        it("matches instance type if they're the same family and scope is Region") {
+            val reservation = CountedReservation(reservedInstance(type = "m3.large", regionScope = true), testAccount)
+            val instanceLarge = MatchedInstance(instance(type = "m3.large"), testAccount)
+            val instanceSmall = MatchedInstance(instance(type = "m3.small"), testAccount)
+
+            assertThat(instanceLarge.sameTypeAs(reservation), equalTo(true))
+            assertThat(instanceSmall.sameTypeAs(reservation), equalTo(true))
         }
 
         it("matches product type if they're the same, regardless of case") {
@@ -310,55 +329,16 @@ class ModelsTest : Spek({
             assertThat(instanceLinux.sameProductAs(reservation), equalTo(false))
         }
 
-        it("matches product type if they're the same, even if one is in VPC") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX (Amazon VPC)"), testAccount)
-            val instanceWindows= MatchedInstance(instance(platform = "windows"), testAccount)
-            val instanceLinux = MatchedInstance(instance(platform = "Linux/UNIX"), testAccount)
-
-            assertThat(instanceWindows.sameProductAs(reservation), equalTo(false))
-            assertThat(instanceLinux.sameProductAs(reservation), equalTo(true))
-        }
-
-        it("matches VPC if reservation not in VPC and instance vpcId is empty") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX"), testAccount)
-            val instance = MatchedInstance(instance(platform = "Linux/UNIX"), testAccount)
-
-            assertThat(instance.vpcMatches(reservation), equalTo(true))
-        }
-
-        it("matches VPC if reservation in VPC and instance vpcId is set") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX (Amazon VPC)"), testAccount)
-            val instance = MatchedInstance(instance(platform = "Linux/UNIX", vpcId = "vpc123"), testAccount)
-
-            assertThat(instance.vpcMatches(reservation), equalTo(true))
-        }
-
-        it("does not match VPC if reservation in VPC and instance vpcId is not set") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX (Amazon VPC)"), testAccount)
-            val instance = MatchedInstance(instance(platform = "Linux/UNIX"), testAccount)
-
-            assertThat(instance.vpcMatches(reservation), equalTo(false))
-        }
-
-        it("does not match VPC if reservation is not in VPC and instance vpcId is set") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX"), testAccount)
-            val instance = MatchedInstance(instance(platform = "Linux/UNIX", vpcId = "vpc123"), testAccount)
-
-            assertThat(instance.vpcMatches(reservation), equalTo(false))
-        }
-
-        it("matches overall if zone, type, product and VPC are the same") {
-            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX (Amazon VPC)", type = "m3.large", az = "us-west-1b"), testAccount)
+        it("matches overall if zone, type, product are the same") {
+            val reservation = CountedReservation(reservedInstance(product = "Linux/UNIX", type = "m3.large", az = "us-west-1b"), testAccount)
             val matchingInstance = MatchedInstance(instance(platform = "Linux/UNIX", vpcId = "vpc123", type = "m3.large", az = "us-west-1b"), testAccount)
             val instanceDifferentZone = MatchedInstance(instance(platform = "Linux/UNIX", vpcId = "vpc123", type = "m3.large", az = "us-west-1c"), testAccount)
             val instanceDifferentProduct = MatchedInstance(instance(platform = "Windows", vpcId = "vpc123", type = "m3.large", az = "us-west-1b"), testAccount)
-            val instanceNotVPC = MatchedInstance(instance(platform = "Linux/UNIX", type = "m3.large", az = "us-west-1b"), testAccount)
             val instanceDifferentType = MatchedInstance(instance(platform = "Linux/UNIX", vpcId = "vpc123", type = "m3.small", az = "us-west-1b"), testAccount)
 
             assertThat(matchingInstance.matches(reservation), equalTo(true))
             assertThat(instanceDifferentZone.matches(reservation), equalTo(false))
             assertThat(instanceDifferentProduct.matches(reservation), equalTo(false))
-            assertThat(instanceNotVPC.matches(reservation), equalTo(false))
             assertThat(instanceDifferentType.matches(reservation), equalTo(false))
         }
     }

@@ -2,16 +2,14 @@ package com.revbingo.aws
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import org.jetbrains.spek.subject.SubjectSpek
+import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 
-class ReservationMatcherTest : SubjectSpek<ReservationMatcher>({
-
-    subject { ReservationMatcher() }
+class ReservationMatcherTest : Spek( {
 
     fun match(reservedInstances: List<List<CountedReservation>>, instances: List<List<MatchedInstance>>) : List<MatchedInstance> {
-        val matchedInstances = subject.match(reservedInstances.flatten(), instances.flatten())
+        val matchedInstances = ReservationMatcher(reservedInstances.flatten()).match(instances.flatten())
         return matchedInstances
     }
 
@@ -141,21 +139,22 @@ class ReservationMatcherTest : SubjectSpek<ReservationMatcher>({
             assertThat(matchedInstances.matching()[0].originalInstance.instanceId, equalTo("theLinuxInstance"))
         }
 
-        it("matches VPC instances") {
+        it("consumes compute units if region scope and same family") {
             val matchedInstances = match(
-                listOf(
-                    countedReservations(count = 2, az = "us-west-1a", type = "m3.large", product = "Linux/UNIX (Amazon VPC)"),
-                    countedReservations(count = 2, az = "us-west-1a", type = "m3.large", product = "Windows (Amazon VPC)")
-                ),
-                listOf(
-                    matchedInstances(count = 1, az = "us-west-1a", type = "m3.large", state = "running", vpcId = "some-vpc"),
-                    matchedInstances(count = 1, az = "us-west-1a", type = "m3.large", state = "running"),
-                    matchedInstances(count = 1, az = "us-west-1a", type = "m3.large", state = "running", platform = "windows"),
-                    matchedInstances(count = 1, az = "us-west-1a", type = "m3.large", state = "running", platform = "windows", vpcId = "some-vpc")
-                )
+                    listOf(
+                            countedReservations(count = 2, az = "us-west-1a", type = "t2.medium", product = "Linux/UNIX", regionScope = true)
+                    ),
+                    listOf(
+                            matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance"),
+                            matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance"),
+                            matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance"),
+                            matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance"),
+                            matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance")
+                    )
             )
 
-            assertThat(matchedInstances.matching().count(), equalTo(2))
+            assertThat(matchedInstances.matching().count(), equalTo(4))
         }
+
     }
 })

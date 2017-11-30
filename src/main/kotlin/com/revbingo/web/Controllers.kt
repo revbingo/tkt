@@ -27,6 +27,7 @@ class UIController(private val repository: Repository) {
             repository.update()
         }
     }
+
 }
 
 class APIController(private val repository: Repository) {
@@ -35,9 +36,7 @@ class APIController(private val repository: Repository) {
         val loadBalancer = repository.loadBalancers.find { it.name == elb } ?: return null
 
         val port = loadBalancer.httpPort ?: loadBalancer.httpsPort
-        return loadBalancer.instances.render {
-            "${it?.publicDnsName}:${port}"
-        }
+        return loadBalancer.instances.render { "${it.publicDnsName}:$port" }
     }
 
     fun generateSshConfig(accountName: String? = null): String {
@@ -76,6 +75,8 @@ class APIController(private val repository: Repository) {
             this.foldRight(StringBuilder()) { it, buf -> buf.appendln(func(it)) }.toString()
 
     private fun Repository.validSshInstances(accountName: String? = null): List<MatchedInstance> =
-            this.instances.filter { (accountName == null || it.location.profile.name == accountName) && it.isRunning
+            this.instances.filter {  it.inAccount(accountName) && it.isRunning
                                         && it.platform != "Windows" && it.originalInstance.keyName != null }
+
+    fun MatchedInstance.inAccount(accountName: String? = null) = (accountName == null || this.location.profile.name == accountName)
 }

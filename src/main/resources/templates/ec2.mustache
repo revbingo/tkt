@@ -81,7 +81,6 @@
             <th>Avail. Zone</th>
             <th>Unused</th>
             <th>O/S</th>
-            <th>VPC</th>
             <th>End</th>
         </tr>
 
@@ -94,7 +93,6 @@
                 <td>{{availabilityZone}}</td>
                 <td>{{unmatchedCount}}/{{instanceCount}}</td>
                 <td>{{productDescription}}</td>
-                <td>{{inVpc}}</td>
                 <td>{{end}}</td>
             </tr>
         {{/unmatchedReservations}}
@@ -111,7 +109,6 @@
             <th>Avail. Zone</th>
             <th>Used</th>
             <th>O/S</th>
-            <th>VPC</th>
             <th>End</th>
         </tr>
 	    {{#matchedReservations}}
@@ -123,7 +120,6 @@
             <td>{{availabilityZone}}</td>
             <td>{{matchedCount}}/{{instanceCount}}</td>
             <td>{{productDescription}}</td>
-            <td>{{inVpc}}</td>
             <td>{{end}}</td>
         </tr>
 	    {{/matchedReservations}}

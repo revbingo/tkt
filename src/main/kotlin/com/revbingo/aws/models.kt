@@ -27,8 +27,18 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
     val availabilityZone: String? = originalReservation.availabilityZone
     val scope: String? = originalReservation.scope
     val instanceType: String = originalReservation.instanceType
-    val productDescription: String = originalReservation.productDescription.removeSuffix(" (Amazon VPC)")
-    val inVpc: Boolean = originalReservation.productDescription.contains("(Amazon VPC)")
+    val family: String = originalReservation.instanceType.split(".")[0]
+    val instanceSize: String = originalReservation.instanceType.split(".")[1]
+    var computeUnits: Float = originalReservation.instanceCount * when(instanceSize) {
+        "micro" -> 0.5f
+        "small" -> 1f
+        "medium" -> 2f
+        "large" -> 4f
+        "xlarge" -> 8f
+        "2xlarge" -> 16f
+        else -> 0f
+    }
+    val productDescription: String = originalReservation.productDescription
     val end: Date? = originalReservation.end
     val instanceCount: Int = originalReservation.instanceCount
     fun matchedCount(): Int = instanceCount - unmatchedCount
@@ -42,6 +52,17 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     val isRunning: Boolean = this.state.name == "running"
     val availabilityZone: String = originalInstance.placement.availabilityZone
     val instanceType: String = originalInstance.instanceType
+    val family: String = originalInstance.instanceType.split(".")[0]
+    val instanceSize: String = originalInstance.instanceType.split(".")[1]
+    val computeUnits: Float = when(instanceSize) {
+        "micro" -> 0.5f
+        "small" -> 1f
+        "medium" -> 2f
+        "large" -> 4f
+        "xlarge" -> 8f
+        "2xlarge" -> 16f
+        else -> 0f
+    }
     val platform: String = if(originalInstance.platform.equals("windows", ignoreCase = true)) "Windows" else "Linux/UNIX"
     val vpcId: String? = originalInstance.vpcId
     val isVpc: Boolean = !vpcId.isNullOrEmpty()
@@ -68,13 +89,12 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     fun sameZoneAs(reservation: CountedReservation) = (reservation.availabilityZone == this.availabilityZone) ||
             (reservation.scope == "Region" && this.availabilityZone.startsWith(reservation.location.region))
 
-    fun sameTypeAs(reservation: CountedReservation) = this.instanceType == reservation.instanceType
+    fun sameTypeAs(reservation: CountedReservation) = (reservation.scope == "Region" && this.family == reservation.family)
+                                                              || this.instanceType == reservation.instanceType
 
     fun sameProductAs(reservation: CountedReservation) = this.platform.equals(reservation.productDescription, ignoreCase = true)
 
-    fun vpcMatches(reservation: CountedReservation) = !(reservation.inVpc xor !this.vpcId.isNullOrEmpty())
-
-    fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) && vpcMatches(it) }
+    fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) }
 }
 
 data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location): AWSResource {
