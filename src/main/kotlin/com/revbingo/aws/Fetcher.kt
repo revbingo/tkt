@@ -56,7 +56,6 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
             describeReservedInstances().reservedInstances
         }.map { (original, location) ->
-            println(original)
             CountedReservation(original, location)
         }.filter { it.isActive }
     }

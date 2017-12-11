@@ -117,8 +117,8 @@ open class RepositoryViewModel(val repository: Repository) {
     open fun lastRefreshTime(): String = if(!repository.updating) DateTimeFormatter.ISO_DATE_TIME.format(repository.updateTime) else "(Refreshing now)"
     open fun refreshAvailable(): Boolean = !repository.updating
 
-    open fun unmatchedReservations() = repository.reservedInstances.filter { it.unmatchedCount > 0 }
-    open fun matchedReservations() = repository.reservedInstances.filter { it.matchedCount() > 0 }
+    open fun unmatchedReservations() = repository.reservedInstances.filter { it.unusedCapacity() > 0f }
+    open fun matchedReservations() = repository.reservedInstances.filter { it.unusedCapacity() == 0f }
     open fun instances() = repository.instances
     open fun loadBalancers() = repository.loadBalancers
     open fun databases() = repository.databases

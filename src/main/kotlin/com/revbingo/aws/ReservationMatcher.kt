@@ -13,7 +13,7 @@ class ReservationMatcher(val reservations: List<CountedReservation>) {
             it.computeUnits > 0 && it.isActive
         }.forEach { reservation ->
             if( this.matches(reservation) && reservation.computeUnits >= this.computeUnits) {
-                    reservation.computeUnits -= this.computeUnits
+                    reservation.match(this)
                     this.matched = true
                     return
             }

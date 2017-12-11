@@ -14,6 +14,7 @@
                 <th class="filter:select">Zone</th>
                 <th class="filter:select">O/S</th>
                 <th class="filter:text">Public DNS</th>
+                <th class="filter:text">Private IP</th>
                 <th class="filter:select">VPC</th>
                 <th class="filter:select">State</th>
                 <th class="filter:select">Account</th>
@@ -58,6 +59,7 @@
                 <td>{{zone}}</td>
                 <td>{{platform}}</td>
                 <td>{{shortDnsName}}</td>
+                <td>{{privateIpAddress}}</td>
                 <td>{{isVpc}}</td>
                 <td>{{state.name}}</td>
                 <td>{{location.profile.name}}</td>
@@ -91,7 +93,7 @@
                 <td>{{location.region}}</td>
                 <td>{{location.profile.name}}</td>
                 <td>{{availabilityZone}}</td>
-                <td>{{unmatchedCount}}/{{instanceCount}}</td>
+                <td>{{unusedCapacity}}/{{capacity}}</td>
                 <td>{{productDescription}}</td>
                 <td>{{end}}</td>
             </tr>
@@ -118,7 +120,7 @@
             <td>{{location.region}}</td>
             <td>{{location.profile.name}}</td>
             <td>{{availabilityZone}}</td>
-            <td>{{matchedCount}}/{{instanceCount}}</td>
+            <td>{{usedCapacity}}/{{capacity}}</td>
             <td>{{productDescription}}</td>
             <td>{{end}}</td>
         </tr>

@@ -42,6 +42,24 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
     val end: Date? = originalReservation.end
     val instanceCount: Int = originalReservation.instanceCount
     fun matchedCount(): Int = instanceCount - unmatchedCount
+    val capacity: Float = when(scope) {
+        "Region" -> computeUnits
+        else -> instanceCount.toFloat()
+    }
+    fun usedCapacity(): Float = when(scope) {
+        "Region" -> capacity - computeUnits
+        else -> capacity - unmatchedCount
+    }
+    fun unusedCapacity(): Float = when(scope) {
+        "Region" -> computeUnits
+        else -> unmatchedCount.toFloat()
+    }
+
+    fun match(instance: MatchedInstance) = when(scope) {
+        "Region" -> computeUnits -= instance.computeUnits
+        else -> unmatchedCount--
+    }
+
 
     override val id: String = originalReservation.reservedInstancesId
     override var price: Float = 0.0f
