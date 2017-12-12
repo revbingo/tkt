@@ -17,6 +17,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     open var databases = emptyList<RDSInstance>()
     open var volumes = emptyList<EBSVolume>()
     open var caches = emptyList<Cache>()
+    open var subnets = emptyList<VPCSubnet>()
 
     open var checks = emptyList<Check>()
     open var checkResults = emptyList<AdvisorResult>()
@@ -47,6 +48,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             val domainNamesJob = async(pool) { fetcher.getDomainNames() }
             val volumesJob = async(pool) { fetcher.getVolumes() }
             val cachesJob = async(pool) { fetcher.getCaches() }
+            val subnetsJob = async(pool) { fetcher.getSubnets() }
 
             reservedInstances = reservedInstancesJob.await()
             instances = instancesJob.await()
@@ -55,6 +57,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             domainNames = domainNamesJob.await()
             volumes = volumesJob.await()
             caches = cachesJob.await()
+            subnets = subnetsJob.await()
 
             instanceIdMap = instances.associateBy { it.instanceId }
 
@@ -117,31 +120,31 @@ open class RepositoryViewModel(val repository: Repository) {
     open fun lastRefreshTime(): String = if(!repository.updating) DateTimeFormatter.ISO_DATE_TIME.format(repository.updateTime) else "(Refreshing now)"
     open fun refreshAvailable(): Boolean = !repository.updating
 
-    open fun unmatchedReservations() = repository.reservedInstances.filter { it.unusedCapacity() > 0f }
-    open fun matchedReservations() = repository.reservedInstances.filter { it.unusedCapacity() == 0f }
     open fun instances() = repository.instances
     open fun loadBalancers() = repository.loadBalancers
     open fun databases() = repository.databases
     open fun domainNames() = repository.domainNames
     open fun volumes() = repository.volumes
     open fun caches() = repository.caches
+    open fun subnets() = repository.subnets
     open fun advisorResults() = repository.checkResults
+
     open fun instanceCount(): Int = repository.instances.count()
     open fun runningCount(): Int = repository.instances.count { it.isRunning }
-    open fun reservedCount(): Int = matchedReservations().foldRight(0, { res, c -> c + res.matchedCount()})
-    open fun unmatchedCount(): Int = unmatchedReservations().foldRight(0, { res, c -> c + res.unmatchedCount })
+
+    open fun usedReservedCount(): Double = repository.reservedInstances.sumByDouble { it.usedCapacity().toDouble() }
+    open fun unusedReservedCount(): Double = repository.reservedInstances.sumByDouble { it.unusedCapacity().toDouble() }
+    open fun totalReservedCount(): Double = usedReservedCount() + unusedReservedCount()
+
     open fun vpcCount(): Int = repository.instances.count { it.isVpc }
+
     open fun instancePct(): Int = instanceCount().asPercentage()
     open fun runningPct(): Int = runningCount().asPercentage()
-    open fun reservedPct(): Int = reservedCount().asPercentage()
-    open fun unmatchedPct(): Int = unmatchedCount().asPercentage()
-
-    open fun vpcPct(): Int = vpcCount().asPercentage()
 
     open fun inError(): Boolean = repository.inError
     open fun errorMessage(): String? = repository.errorMessage
 
-    fun Int.asPercentage():Int = (this * 100)/(instanceCount() + unmatchedCount())
+    fun Int.asPercentage():Int = (this * 100)/(instanceCount())
 
     open fun totalCostPerHour(): Double = repository.instances.filter { it.isRunning }.sumByDouble { it.price.toDouble() }
 

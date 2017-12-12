@@ -94,14 +94,14 @@ class RepositoryViewModelTest : Spek({
             assertThat(subject.vpcCount(), equalTo(2))
         }
 
-        it("gives total number of reserved instances") {
+        it("gives total number of reserved compute units") {
             val mockRepo = mock<Repository> {
                 on { it.reservedInstances } doReturn countedReservations(count = 4, az = "us-west-1", type = "m3.large", unmatchedCount = 1)
             }
 
             val subject = RepositoryViewModel(mockRepo)
 
-            assertThat(subject.reservedCount(), equalTo(3))
+            assertThat(subject.usedReservedCount(), equalTo(12.0))
         }
 
         it("gives total number of unmatched reservations") {
@@ -111,7 +111,7 @@ class RepositoryViewModelTest : Spek({
 
             val subject = RepositoryViewModel(mockRepo)
 
-            assertThat(subject.unmatchedCount(), equalTo(1))
+            assertThat(subject.unusedReservedCount(), equalTo(4.0))
         }
 
         it("gives percentage widths for bars") {
@@ -126,11 +126,8 @@ class RepositoryViewModelTest : Spek({
 
             val subject = RepositoryViewModel(mockRepo)
 
-            assertThat(subject.instancePct(), equalTo(90))
-            assertThat(subject.unmatchedPct(), equalTo(10))
-            assertThat(subject.runningPct(), equalTo(70))
-            assertThat(subject.reservedPct(), equalTo(50))
-            assertThat(subject.vpcPct(), equalTo(20))
+            assertThat(subject.instancePct(), equalTo(100))
+            assertThat(subject.runningPct(), equalTo(77))
         }
 
         it("gives total cost per hour, including only running instances") {

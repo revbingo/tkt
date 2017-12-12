@@ -1,9 +1,6 @@
 package com.revbingo.aws
 
-import com.amazonaws.services.ec2.model.Instance
-import com.amazonaws.services.ec2.model.InstanceState
-import com.amazonaws.services.ec2.model.ReservedInstances
-import com.amazonaws.services.ec2.model.Volume
+import com.amazonaws.services.ec2.model.*
 import com.amazonaws.services.elasticache.model.CacheCluster
 import com.amazonaws.services.elasticloadbalancing.model.Listener
 import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
@@ -29,7 +26,25 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
     val instanceType: String = originalReservation.instanceType
     val family: String = originalReservation.instanceType.split(".")[0]
     val instanceSize: String = originalReservation.instanceType.split(".")[1]
-    var computeUnits: Float = originalReservation.instanceCount * when(instanceSize) {
+    val capacity: Float = originalReservation.instanceCount * computeUnitsPerInstance()
+
+    var computeUnits: Float = unmatchedCount * computeUnitsPerInstance()
+
+    val productDescription: String = originalReservation.productDescription
+    val end: Date? = originalReservation.end
+    val instanceCount: Int = originalReservation.instanceCount
+    fun matchedCount(): Int = instanceCount - unmatchedCount
+
+
+    fun usedCapacity(): Float = capacity - computeUnits
+
+    fun unusedCapacity(): Float = computeUnits
+
+    fun match(instance: MatchedInstance) {
+        computeUnits -= instance.computeUnits
+    }
+
+    fun computeUnitsPerInstance() = when(instanceSize) {
         "micro" -> 0.5f
         "small" -> 1f
         "medium" -> 2f
@@ -38,28 +53,6 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
         "2xlarge" -> 16f
         else -> 0f
     }
-    val productDescription: String = originalReservation.productDescription
-    val end: Date? = originalReservation.end
-    val instanceCount: Int = originalReservation.instanceCount
-    fun matchedCount(): Int = instanceCount - unmatchedCount
-    val capacity: Float = when(scope) {
-        "Region" -> computeUnits
-        else -> instanceCount.toFloat()
-    }
-    fun usedCapacity(): Float = when(scope) {
-        "Region" -> capacity - computeUnits
-        else -> capacity - unmatchedCount
-    }
-    fun unusedCapacity(): Float = when(scope) {
-        "Region" -> computeUnits
-        else -> unmatchedCount.toFloat()
-    }
-
-    fun match(instance: MatchedInstance) = when(scope) {
-        "Region" -> computeUnits -= instance.computeUnits
-        else -> unmatchedCount--
-    }
-
 
     override val id: String = originalReservation.reservedInstancesId
     override var price: Float = 0.0f
@@ -181,6 +174,18 @@ data class Cache(val originalInstance: CacheCluster, val location: Location): AW
     val status = originalInstance.cacheClusterStatus
     val nodeCount = originalInstance.numCacheNodes
 
+}
+
+data class VPCSubnet(val originalInstance: Subnet, val location: Location): AWSResource {
+
+    override val id = originalInstance.subnetId
+    override var price = 0.0f
+
+    val name = originalInstance.tags.firstOrNull { it.key == "Name" }?.value
+    val vpc = originalInstance.vpcId
+    val cidrBlock = originalInstance.cidrBlock
+    val az = originalInstance.availabilityZone
+    val default = originalInstance.isDefaultForAz
 }
 
 data class Check(val id: String, val name: String)

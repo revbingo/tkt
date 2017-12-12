@@ -26,6 +26,7 @@ interface Fetcher {
     fun getAdvisorResults(checks: List<Check>): List<AdvisorResult>
     fun getVolumes(): List<EBSVolume>
     fun getCaches(): List<Cache>
+    fun getSubnets(): List<VPCSubnet>
 }
 
 open class ClientGenerator(val accounts: Accounts) {
@@ -58,6 +59,14 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         }.map { (original, location) ->
             CountedReservation(original, location)
         }.filter { it.isActive }
+    }
+
+    override fun getSubnets(): List<VPCSubnet> {
+        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
+            describeSubnets().subnets
+        }.map { (original, location) ->
+            VPCSubnet(original, location)
+        }
     }
 
     override fun getInstances(): List<MatchedInstance> {

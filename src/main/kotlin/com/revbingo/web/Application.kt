@@ -30,6 +30,7 @@ class Application(val uiController: UIController, val apiController: APIControll
         mapToTemplate("/route53", "route53.mustache")
         mapToTemplate("/volumes", "volumes.mustache")
         mapToTemplate("/caches", "caches.mustache")
+        mapToTemplate("/subnets", "subnets.mustache")
         mapToTemplate("/dashboard", "dashboard.mustache")
         mapToTemplate("/checks", "checks.mustache")
 

@@ -1,5 +1,6 @@
 package com.revbingo.web
 
+import com.amazonaws.services.ec2.model.Subnet
 import com.amazonaws.services.ec2.model.Tag
 import com.amazonaws.services.ec2.model.Volume
 import com.amazonaws.services.ec2.model.VolumeAttachment
@@ -32,7 +33,7 @@ class UITests : SubjectSpek<Application>({
 
     val mockRepo: Repository = mock {
         on { instances } doReturn listOf(
-                matchedInstances(count = 1, type = "m3.large", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
+                matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
                         id = "abc1", vpcId = "vpc", tags = listOf(Tag("Name", "server1"), Tag("Capability", "Management"),
                         Tag("Client", "WDS"), Tag("Environment", "Prod"))).apply {
                     this.first().price = 0.832f
@@ -46,8 +47,9 @@ class UITests : SubjectSpek<Application>({
                 }
         ).flatten()
 
-        on { reservedInstances } doReturn countedReservations(count = 3).apply {
+        on { reservedInstances } doReturn countedReservations(count = 3, type = "t2.large").apply {
             this.first().unmatchedCount = 1
+            this.first().computeUnits = 4.0f
         }
 
         on { loadBalancers } doReturn listOf(
@@ -115,6 +117,17 @@ class UITests : SubjectSpek<Application>({
                 }, Location(Profile("test"), "us-west-1"))
         )
 
+        on { subnets } doReturn listOf(
+                VPCSubnet(Subnet().apply {
+                    this.subnetId = "subnet-abcd"
+                    this.vpcId = "vpc-123"
+                    setTags(listOf(Tag("Name", "mySubnet")))
+                    this.cidrBlock = "1.2.3.4/5"
+                    this.availabilityZone = "us-west-1a"
+                    this.defaultForAz = false
+                }, Location(Profile("test"), "us-west-1"))
+        )
+
         on { checkResults} doReturn listOf(
                 AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
         )
@@ -175,7 +188,9 @@ class UITests : SubjectSpek<Application>({
         it("has a bunch of info about a server") {
             val row1 = dataTable("tbody/tr[1]")[0]
 
-            row1 shouldContain "server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|true|running|test|false|0.8".tsv()
+            println(row1.asText())
+            println("server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|true|running|test|false|0.832|2017-12-12|0".tsv())
+            row1 shouldContain "server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|true|running|test|false|0.832|2017-12-12|0".tsv()
         }
     }
 
@@ -213,11 +228,11 @@ class UITests : SubjectSpek<Application>({
         }
 
         it("shows the number of matched reservations") {
-            statBoxes[2] shouldContain "2\nused reservations"
+            statBoxes[2] shouldContain "12.0\nreserved units"
         }
 
         it("shows the number of unmatched reservations") {
-            statBoxes[3] shouldContain "1\nunmatched reservations"
+            statBoxes[3] shouldContain "4.0\nunmatched reserved units"
         }
 
         it("shows the number of servers in VPC") {
@@ -299,6 +314,20 @@ class UITests : SubjectSpek<Application>({
 
         it("contains a bunch of info about caches") {
             dataTable.firstRow() shouldContain "clusterId|mycache.amazon.com:11211|us-west-1|cache.m1.small|memcached 1.4.5|available|3|test".tsv()
+        }
+    }
+
+    describe("the subnet listing") {
+        var page: HtmlPage?
+        var dataTable: DomElement? = null
+
+        it("is mapped to /subnets") {
+            page = webClient.getPage("http://localhost:4567/subnets")
+            dataTable = page?.getElementById("data-table")
+        }
+
+        it("contains a bunch of info about subnets") {
+            dataTable.firstRow() shouldContain "subnet-abcd|mySubnet|vpc-123|test|us-west-1a|1.2.3.4/5|false".tsv()
         }
     }
 

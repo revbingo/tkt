@@ -22,8 +22,8 @@ sealed class DatabaseAccessor() {
             RepositoryHistory.insert {
                 it[updateTime] = DateTime(repo.updateTime.toInstant(ZoneOffset.UTC).toEpochMilli())
                 it[loadBalancerCount] = viewWrapper.loadBalancers().count()
-                it[reservedInstanceCount] = viewWrapper.reservedCount() + viewWrapper.unmatchedCount()
-                it[matchedReservationCount] = viewWrapper.reservedCount()
+                it[reservedInstanceCount] = BigDecimal.valueOf(viewWrapper.totalReservedCount())
+                it[matchedReservationCount] = BigDecimal.valueOf(viewWrapper.unusedReservedCount())
                 it[instanceCount] = viewWrapper.instanceCount()
                 it[runningCount] = viewWrapper.runningCount()
                 it[vpcCount] = viewWrapper.vpcCount()
@@ -53,8 +53,8 @@ sealed class DatabaseAccessor() {
 
 object RepositoryHistory: Table() {
     val updateTime = datetime("updateTime")
-    val reservedInstanceCount = integer("riCount")
-    val matchedReservationCount = integer("matchedRI")
+    val reservedInstanceCount = decimal("riCount", 5, 2)
+    val matchedReservationCount = decimal("matchedRI", 5, 2)
     val instanceCount = integer("instanceCount")
     val runningCount = integer("runningCount").default(0)
     val vpcCount = integer("vpcCount").default(0)
