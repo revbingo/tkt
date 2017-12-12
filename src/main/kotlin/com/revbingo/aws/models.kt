@@ -81,6 +81,9 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     val environment: String? = tag("Environment")
     val region: String? = availabilityZone.dropLast(1)
     val zone: String? = availabilityZone.takeLast(1)
+    val subnetId = originalInstance.subnetId
+
+    var subnet: VPCSubnet? = null
 
     override val id: String = instanceId
     override var price: Float = 0.0f

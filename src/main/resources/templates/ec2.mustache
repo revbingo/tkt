@@ -1,6 +1,5 @@
 {{> header }}
-    <a href="#UsedReservations">Used Reservations</a> |
-    <a href="#UnusedReservations">Unused Reservations</a><br />
+    <a href="#Reservations">Reservations</a> |
     <table id="data-table" class="table table-striped">
         <thead>
             <tr>
@@ -15,7 +14,7 @@
                 <th class="filter:select">O/S</th>
                 <th class="filter:text">Public DNS</th>
                 <th class="filter:text">Private IP</th>
-                <th class="filter:select">VPC</th>
+                <th class="filter:select">Subnet</th>
                 <th class="filter:select">State</th>
                 <th class="filter:select">Account</th>
                 <th class="filter:select">Reserved</th>
@@ -60,7 +59,7 @@
                 <td>{{platform}}</td>
                 <td>{{shortDnsName}}</td>
                 <td>{{privateIpAddress}}</td>
-                <td>{{isVpc}}</td>
+                <td>{{subnet.name}}</td>
                 <td>{{state.name}}</td>
                 <td>{{location.profile.name}}</td>
                 <td>{{matched}}</td>
@@ -72,35 +71,7 @@
     </table>
 
     <p>&nbsp;</p>
-    <a name="UnusedReservations"></a><p style="font-size:1.4em;">Unused Reserved Instances:</p>
-
-    <table class="table">
-        <tr>
-            <th>ID</th>
-            <th>Size</th>
-            <th>Region</th>
-            <th>Account</th>
-            <th>Avail. Zone</th>
-            <th>Unused</th>
-            <th>O/S</th>
-            <th>End</th>
-        </tr>
-
-        {{#unmatchedReservations}}
-            <tr>
-                <td>{{id}}</td>
-                <td>{{instanceType}}</td>
-                <td>{{location.region}}</td>
-                <td>{{location.profile.name}}</td>
-                <td>{{availabilityZone}}</td>
-                <td>{{unusedCapacity}}/{{capacity}}</td>
-                <td>{{productDescription}}</td>
-                <td>{{end}}</td>
-            </tr>
-        {{/unmatchedReservations}}
-    </table>
-
-    <a name="UsedReservations"></a><p style="font-size:1.4em;">Used Reserved Instances:</p>
+    <a name="Reservations"></a><p style="font-size:1.4em;">Reservations:</p>
 
     <table class="table">
         <tr>
@@ -113,17 +84,19 @@
             <th>O/S</th>
             <th>End</th>
         </tr>
-	    {{#matchedReservations}}
-        <tr>
-            <td>{{id}}</td>
-            <td>{{instanceType}}</td>
-            <td>{{location.region}}</td>
-            <td>{{location.profile.name}}</td>
-            <td>{{availabilityZone}}</td>
-            <td>{{usedCapacity}}/{{capacity}}</td>
-            <td>{{productDescription}}</td>
-            <td>{{end}}</td>
-        </tr>
-	    {{/matchedReservations}}
+
+        {{#reservations}}
+            <tr>
+                <td>{{id}}</td>
+                <td>{{instanceType}}</td>
+                <td>{{location.region}}</td>
+                <td>{{location.profile.name}}</td>
+                <td>{{availabilityZone}}</td>
+                <td>{{usedCapacity}}/{{capacity}}</td>
+                <td>{{productDescription}}</td>
+                <td>{{end}}</td>
+            </tr>
+        {{/reservations}}
     </table>
+
 {{> footer }}

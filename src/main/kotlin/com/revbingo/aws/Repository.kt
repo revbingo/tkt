@@ -23,6 +23,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     open var checkResults = emptyList<AdvisorResult>()
 
     open var instanceIdMap: Map<String, MatchedInstance> = mutableMapOf()
+    open var subnetMap: Map<String, VPCSubnet> = mutableMapOf()
 
     open var updateTime: LocalDateTime = LocalDateTime.now()
     open var updating = true
@@ -60,9 +61,11 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             subnets = subnetsJob.await()
 
             instanceIdMap = instances.associateBy { it.instanceId }
+            subnetMap = subnets.associateBy { it.id }
 
             updateInstancesInLoadBalancers()
             updateInstancesInVolumes()
+            updateSubnetsInInstances()
             matchReservationsToInstances()
 
             applyPricing()
@@ -102,6 +105,12 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
         }
     }
 
+    private fun updateSubnetsInInstances() {
+        instances.forEach { instance ->
+            instance.subnet = subnetMap[instance.subnetId]
+        }
+    }
+
     private fun persistToDatabase() {
         databaseAccessor.persist(this)
     }
@@ -120,6 +129,7 @@ open class RepositoryViewModel(val repository: Repository) {
     open fun lastRefreshTime(): String = if(!repository.updating) DateTimeFormatter.ISO_DATE_TIME.format(repository.updateTime) else "(Refreshing now)"
     open fun refreshAvailable(): Boolean = !repository.updating
 
+    open fun reservations() = repository.reservedInstances
     open fun instances() = repository.instances
     open fun loadBalancers() = repository.loadBalancers
     open fun databases() = repository.databases
