@@ -18,6 +18,16 @@ interface AWSResource {
     var price: Float
 }
 
+fun computeUnitsFor(instanceSize: String) = when(instanceSize) {
+    "micro" -> 0.5f
+    "small" -> 1f
+    "medium" -> 2f
+    "large" -> 4f
+    "xlarge" -> 8f
+    "2xlarge" -> 16f
+    else -> 0f
+}
+
 data class CountedReservation(val originalReservation: ReservedInstances, val location: Location, var unmatchedCount: Int = originalReservation.instanceCount): AWSResource {
     val state: String = originalReservation.state
     val isActive: Boolean = state == "active"
@@ -26,9 +36,9 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
     val instanceType: String = originalReservation.instanceType
     val family: String = originalReservation.instanceType.split(".")[0]
     val instanceSize: String = originalReservation.instanceType.split(".")[1]
-    val capacity: Float = originalReservation.instanceCount * computeUnitsPerInstance()
+    val capacity: Float = originalReservation.instanceCount * computeUnitsFor(instanceSize)
 
-    var computeUnits: Float = unmatchedCount * computeUnitsPerInstance()
+    var computeUnits: Float = unmatchedCount * computeUnitsFor(instanceSize)
 
     val productDescription: String = originalReservation.productDescription
     val end: Date? = originalReservation.end
@@ -44,16 +54,6 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
         computeUnits -= instance.computeUnits
     }
 
-    fun computeUnitsPerInstance() = when(instanceSize) {
-        "micro" -> 0.5f
-        "small" -> 1f
-        "medium" -> 2f
-        "large" -> 4f
-        "xlarge" -> 8f
-        "2xlarge" -> 16f
-        else -> 0f
-    }
-
     override val id: String = originalReservation.reservedInstancesId
     override var price: Float = 0.0f
 }
@@ -65,15 +65,7 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     val instanceType: String = originalInstance.instanceType
     val family: String = originalInstance.instanceType.split(".")[0]
     val instanceSize: String = originalInstance.instanceType.split(".")[1]
-    val computeUnits: Float = when(instanceSize) {
-        "micro" -> 0.5f
-        "small" -> 1f
-        "medium" -> 2f
-        "large" -> 4f
-        "xlarge" -> 8f
-        "2xlarge" -> 16f
-        else -> 0f
-    }
+    val computeUnits: Float = computeUnitsFor(instanceSize)
     val platform: String = if(originalInstance.platform.equals("windows", ignoreCase = true)) "Windows" else "Linux/UNIX"
     val vpcId: String? = originalInstance.vpcId
     val isVpc: Boolean = !vpcId.isNullOrEmpty()
