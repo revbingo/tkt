@@ -5,9 +5,9 @@ buildscript {
 
     ext {
         awsVersion="1.11.74"
-        kotlinVersion="1.1.1"
-        spekVersion="1.1.0-beta3"
-        junitVersion="1.0.0-M3"
+        kotlinVersion="1.2.0"
+        spekVersion="1.1.5"
+        junitVersion="1.0.2"
     }
 
     repositories {
