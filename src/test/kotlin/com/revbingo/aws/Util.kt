@@ -24,7 +24,7 @@ fun reservedInstance(count: Int = 1, az: String = "us-east-1a", type: String = "
 }
 
 fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String = "running",
-             id: String = "noid", platform: String = "", vpcId: String? = null,
+             id: String = "noid", platform: String = "", vpcId: String? = null, subnetId: String? = null,
              dnsName: String? = null, tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
             privateIpAddress: String? = null, keyName: String? = "key") : Instance {
 
@@ -35,6 +35,7 @@ fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String
     instance.placement = Placement().withAvailabilityZone(az)
     instance.platform = platform
     instance.vpcId = vpcId
+    instance.subnetId = subnetId
     instance.launchTime = Date()
     instance.publicDnsName = dnsName
     instance.setTags(tags)
@@ -54,16 +55,18 @@ fun countedReservations(count: Int = 1, az: String = "", type: String = "t2.larg
 }
 
 fun matchedInstances(count: Int = 1, az: String = "", type: String = "t2.large", state: String = "running",
-              id: String = "noid", platform: String = "", vpcId: String? = null, dnsName: String? = null,
+              id: String = "noid", platform: String = "", vpcId: String? = null, subnetId: String? = null, subnet: VPCSubnet? = null, dnsName: String? = null,
                      tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
                      privateIpAddress: String? = null, keyName: String? = "key", accountName: String = "test") : List<MatchedInstance> {
 
     val instances = mutableListOf<Instance>()
     repeat(count) {
-        val instance = instance(az, type, state, id, platform, vpcId, dnsName, tags, publicIpAddress, privateIpAddress, keyName)
+        val instance = instance(az, type, state, id, platform, vpcId, subnet?.id ?: subnetId, dnsName, tags, publicIpAddress, privateIpAddress, keyName)
         instances.add(instance)
     }
-    return instances.map { MatchedInstance(it, Location(Profile(accountName), az.dropLast(1))) }
+    return instances.map { MatchedInstance(it, Location(Profile(accountName), az.dropLast(1))).apply {
+        this.subnet = subnet
+    } }
 }
 
 object ConfigParser {

@@ -1,9 +1,6 @@
 package com.revbingo.aws
 
-import com.amazonaws.services.ec2.model.InstanceState
-import com.amazonaws.services.ec2.model.Tag
-import com.amazonaws.services.ec2.model.Volume
-import com.amazonaws.services.ec2.model.VolumeAttachment
+import com.amazonaws.services.ec2.model.*
 import com.amazonaws.services.elasticache.model.CacheCluster
 import com.amazonaws.services.rds.model.DBInstance
 import com.amazonaws.services.rds.model.Endpoint
@@ -471,6 +468,23 @@ class ModelsTest : Spek({
             assertThat(subject.engineVersion, equalTo("1.4.5"))
             assertThat(subject.status, equalTo("available"))
             assertThat(subject.nodeCount, equalTo(3))
+        }
+    }
+
+    describe("A subnet") {
+        it("gets name from the tags") {
+            val originalInstance = Subnet().apply {
+                this.subnetId = "subnet-abcd"
+                this.vpcId = "vpc-123"
+                setTags(listOf(Tag("Name", "mySubnet")))
+                this.cidrBlock = "1.2.3.4/5"
+                this.availabilityZone = "us-west-1a"
+                this.defaultForAz = false
+            }
+
+            val subject = VPCSubnet(originalInstance, Location(Profile("test"), "us-west-1"))
+
+            assertThat(subject.name, equalTo("mySubnet"))
         }
     }
 

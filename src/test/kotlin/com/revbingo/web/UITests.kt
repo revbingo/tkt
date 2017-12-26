@@ -32,9 +32,22 @@ import java.time.LocalDateTime
 class UITests : SubjectSpek<Application>({
 
     val mockRepo: Repository = mock {
+        val theSubnet =  VPCSubnet(Subnet().apply {
+            this.subnetId = "subnet-abcd"
+            this.vpcId = "vpc-123"
+            setTags(listOf(Tag("Name", "mySubnet")))
+            this.cidrBlock = "1.2.3.4/5"
+            this.availabilityZone = "us-west-1a"
+            this.defaultForAz = false
+        },  Location(Profile("test"), "us-west-1"))
+
+        on { subnets } doReturn listOf(
+               theSubnet
+        )
+
         on { instances } doReturn listOf(
                 matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
-                        id = "abc1", vpcId = "vpc", tags = listOf(Tag("Name", "server1"), Tag("Capability", "Management"),
+                        id = "abc1", vpcId = "vpc", subnet = theSubnet, tags = listOf(Tag("Name", "server1"), Tag("Capability", "Management"),
                         Tag("Client", "WDS"), Tag("Environment", "Prod"))).apply {
                     this.first().price = 0.832f
                 },
@@ -117,17 +130,6 @@ class UITests : SubjectSpek<Application>({
                 }, Location(Profile("test"), "us-west-1"))
         )
 
-        on { subnets } doReturn listOf(
-                VPCSubnet(Subnet().apply {
-                    this.subnetId = "subnet-abcd"
-                    this.vpcId = "vpc-123"
-                    setTags(listOf(Tag("Name", "mySubnet")))
-                    this.cidrBlock = "1.2.3.4/5"
-                    this.availabilityZone = "us-west-1a"
-                    this.defaultForAz = false
-                }, Location(Profile("test"), "us-west-1"))
-        )
-
         on { checkResults} doReturn listOf(
                 AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
         )
@@ -188,9 +190,7 @@ class UITests : SubjectSpek<Application>({
         it("has a bunch of info about a server") {
             val row1 = dataTable("tbody/tr[1]")[0]
 
-            println(row1.asText())
-            println("server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|true|running|test|false|0.832|2017-12-12|0".tsv())
-            row1 shouldContain "server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|true|running|test|false|0.832|2017-12-12|0".tsv()
+            row1 shouldContain "server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|mySubnet|running|test|false|0.832".tsv()
         }
     }
 

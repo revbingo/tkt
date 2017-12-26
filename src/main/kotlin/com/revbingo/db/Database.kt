@@ -41,7 +41,7 @@ sealed class DatabaseAccessor() {
         }
     }
 
-    open class H2(dbLocation: String): DatabaseAccessor(Database.connect("jdbc:h2:${dbLocation}", driver = "org.h2.Driver"))
+    open class H2(dbLocation: String): DatabaseAccessor(Database.connect("jdbc:h2:$dbLocation", driver = "org.h2.Driver"))
 
     class H2InMemory(): H2("mem")
 
