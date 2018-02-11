@@ -225,7 +225,7 @@ class ControllersTest: Spek({
                         }, ListenerDescription().apply {
                             listener = Listener("HTTPS", 443, 8443)
                         }))
-                    }, Location(Profile("test"), "us-west-1")).apply {
+                    }, Location(Profile("test"), "us-west-1"), "Classic").apply {
                         instances = listOf(matchedInstances(id = "instanceone", dnsName = "instanceone.wds.co" ), matchedInstances(id = "instancetwo", dnsName = "instancetwo.wds.co")).flatten().toMutableList()
                     },
                     InstancedLoadBalancer(LoadBalancerDescription().apply {
@@ -234,7 +234,7 @@ class ControllersTest: Spek({
                         setListenerDescriptions(listOf(ListenerDescription().apply {
                             listener = Listener("HTTPS", 443, 8443)
                         }))
-                    }, Location(Profile("test"), "us-west-1")).apply {
+                    }, Location(Profile("test"), "us-west-1"), "Classic").apply {
                         instances = listOf(matchedInstances(id = "instancethree", dnsName = "instancethree.wds.co"), matchedInstances(id = "instancefour", dnsName = "instancefour.wds.co")).flatten().toMutableList()
                     }
             )

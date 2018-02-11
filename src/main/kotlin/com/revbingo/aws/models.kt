@@ -105,7 +105,7 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) }
 }
 
-data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location): AWSResource {
+data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location, val type: String): AWSResource {
 
     val name: String = originalLoadBalancer.loadBalancerName
     val httpPort: Int? = originalLoadBalancer.listenerDescriptions.forPort(80)?.instancePort

@@ -88,7 +88,7 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         return clientGenerator.eachLocation(AmazonElasticLoadBalancingClientBuilder.standard()) {
             describeLoadBalancers().loadBalancerDescriptions
         }.map { (original, location) ->
-            InstancedLoadBalancer(original, location)
+            InstancedLoadBalancer(original, location, "Classic")
         }
     }
 
@@ -114,7 +114,7 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
                 loadBalancerName = alb.originalLoadBalancer.loadBalancerName
                 dnsName = alb.originalLoadBalancer.dnsName
             }
-            InstancedLoadBalancer(mappedDescription, location)
+            InstancedLoadBalancer(mappedDescription, location, "Application")
         }
     }
 
