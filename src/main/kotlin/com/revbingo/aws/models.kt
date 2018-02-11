@@ -5,6 +5,8 @@ import com.amazonaws.services.elasticache.model.CacheCluster
 import com.amazonaws.services.elasticloadbalancing.model.Listener
 import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription
+import com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer
+import com.amazonaws.services.elasticloadbalancingv2.model.TargetGroup
 import com.amazonaws.services.rds.model.DBInstance
 import com.amazonaws.services.route53.model.ResourceRecordSet
 import com.amazonaws.services.support.model.DescribeTrustedAdvisorCheckResultResult
@@ -116,6 +118,14 @@ data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescripti
     override var price: Float = 0.0f
 
     fun List<ListenerDescription>.forPort(port: Int): Listener? = this.filter { it.listener.loadBalancerPort == port}.firstOrNull()?.listener
+}
+
+data class ApplicationLoadBalancer(val originalLoadBalancer: LoadBalancer,
+                                   val listeners: List<com.amazonaws.services.elasticloadbalancingv2.model.Listener>,
+                                   val targetGroups: List<TargetGroup>): AWSResource {
+
+    override val id: String = originalLoadBalancer.dnsName
+    override var price: Float = 0.0f
 }
 
 data class RDSInstance(val originalInstance: DBInstance, val location: Location): AWSResource {

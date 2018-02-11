@@ -5,6 +5,12 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder
 import com.amazonaws.services.elasticache.AmazonElastiCacheClientBuilder
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder
+import com.amazonaws.services.elasticloadbalancing.model.Listener
+import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
+import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeListenersRequest
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest
 import com.amazonaws.services.rds.AmazonRDSClientBuilder
 import com.amazonaws.services.route53.AmazonRoute53
 import com.amazonaws.services.route53.AmazonRoute53ClientBuilder
@@ -20,6 +26,7 @@ interface Fetcher {
     fun getReservedInstances(): List<CountedReservation>
     fun getInstances(): List<MatchedInstance>
     fun getLoadBalancers(): List<InstancedLoadBalancer>
+    fun getApplicationLoadBalancers(): List<InstancedLoadBalancer>
     fun getDatabases(): List<RDSInstance>
     fun getDomainNames(): List<DomainName>
     fun getTrustedAdvisorChecks(): List<Check>
@@ -82,6 +89,32 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
             describeLoadBalancers().loadBalancerDescriptions
         }.map { (original, location) ->
             InstancedLoadBalancer(original, location)
+        }
+    }
+
+    override fun getApplicationLoadBalancers(): List<InstancedLoadBalancer> {
+        val clientBuilder = com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder.standard()
+        return clientGenerator.eachLocation(clientBuilder) {
+            describeLoadBalancers(DescribeLoadBalancersRequest()).loadBalancers.map {
+                ApplicationLoadBalancer(it,
+                        describeListeners(DescribeListenersRequest().withLoadBalancerArn(it.loadBalancerArn)).listeners,
+                        describeTargetGroups(DescribeTargetGroupsRequest().withLoadBalancerArn(it.loadBalancerArn)).targetGroups)
+            }
+        }.map { (alb, location) ->
+            val mappedDescription = LoadBalancerDescription().apply {
+                setListenerDescriptions(alb.listeners.map { l ->
+                    ListenerDescription().apply {
+                        listener = Listener().apply {
+                            instancePort = 0
+                            instanceProtocol = l.protocol
+                            loadBalancerPort = l.port
+                        }
+                    }
+                })
+                loadBalancerName = alb.originalLoadBalancer.loadBalancerName
+                dnsName = alb.originalLoadBalancer.dnsName
+            }
+            InstancedLoadBalancer(mappedDescription, location)
         }
     }
 

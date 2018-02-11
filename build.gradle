@@ -50,6 +50,7 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-core"
     compile "com.amazonaws:aws-java-sdk-ec2"
     compile "com.amazonaws:aws-java-sdk-elasticloadbalancing"
+    compile "com.amazonaws:aws-java-sdk-elasticloadbalancingv2"
     compile "com.amazonaws:aws-java-sdk-rds"
     compile "com.amazonaws:aws-java-sdk-route53"
     compile "com.amazonaws:aws-java-sdk-support"

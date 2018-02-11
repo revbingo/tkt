@@ -45,6 +45,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             val reservedInstancesJob = async(pool) { fetcher.getReservedInstances() }
             val instancesJob = async(pool) { fetcher.getInstances() }
             val loadBalancersJob = async(pool) { fetcher.getLoadBalancers() }
+            val appLoadBalancersJob = async(pool) { fetcher.getApplicationLoadBalancers() }
             val databasesJob = async(pool) { fetcher.getDatabases()}
             val domainNamesJob = async(pool) { fetcher.getDomainNames() }
             val volumesJob = async(pool) { fetcher.getVolumes() }
@@ -53,7 +54,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
 
             reservedInstances = reservedInstancesJob.await()
             instances = instancesJob.await()
-            loadBalancers = loadBalancersJob.await()
+            loadBalancers = loadBalancersJob.await().union(appLoadBalancersJob.await()).toList()
             databases = databasesJob.await()
             domainNames = domainNamesJob.await()
             volumes = volumesJob.await()
