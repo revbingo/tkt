@@ -2,6 +2,7 @@ package com.revbingo.aws
 
 import com.amazonaws.client.builder.AwsSyncClientBuilder
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder
 import com.amazonaws.services.elasticache.AmazonElastiCacheClientBuilder
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder
@@ -34,6 +35,7 @@ interface Fetcher {
     fun getVolumes(): List<EBSVolume>
     fun getCaches(): List<Cache>
     fun getSubnets(): List<VPCSubnet>
+    fun getCloudformationStacks(): List<CFStack>
 }
 
 open class ClientGenerator(val accounts: Accounts) {
@@ -175,6 +177,14 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
             }
         }.flatMap { (check, results) ->
             AdvisorResult.create(check, results)
+        }
+    }
+
+    override fun getCloudformationStacks(): List<CFStack> {
+        return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
+            describeStacks().stacks
+        }.map { (stack, location) ->
+            CFStack(stack, location)
         }
     }
 }

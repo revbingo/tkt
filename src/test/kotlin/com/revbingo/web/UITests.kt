@@ -1,5 +1,6 @@
 package com.revbingo.web
 
+import com.amazonaws.services.cloudformation.model.Stack
 import com.amazonaws.services.ec2.model.Subnet
 import com.amazonaws.services.ec2.model.Tag
 import com.amazonaws.services.ec2.model.Volume
@@ -132,6 +133,14 @@ class UITests : SubjectSpek<Application>({
 
         on { checkResults} doReturn listOf(
                 AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
+        )
+
+        on { stacks } doReturn listOf(
+                CFStack(Stack().apply {
+                    this.stackId = "123stack"
+                    this.stackName = "MyCFStack"
+                    this.stackStatus = "CREATE_COMPLETE"
+                }, Location(Profile("test"), "us-west-1"))
         )
 
         on { updateTime } doReturn LocalDateTime.now()
@@ -328,6 +337,20 @@ class UITests : SubjectSpek<Application>({
 
         it("contains a bunch of info about subnets") {
             dataTable.firstRow() shouldContain "subnet-abcd|mySubnet|vpc-123|test|us-west-1a|1.2.3.4/5|false".tsv()
+        }
+    }
+
+    describe("the stack listing") {
+        var page: HtmlPage?
+        var dataTable: DomElement? = null
+
+        it("is mapped to /stacks") {
+            page = webClient.getPage("http://localhost:4567/stacks")
+            dataTable = page?.getElementById("data-table")
+        }
+
+        it("contains a bunch of info about subnets") {
+            dataTable.firstRow() shouldContain "MyCFStack|test|us-west-1".tsv()
         }
     }
 

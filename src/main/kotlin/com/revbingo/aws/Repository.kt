@@ -18,6 +18,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     open var volumes = emptyList<EBSVolume>()
     open var caches = emptyList<Cache>()
     open var subnets = emptyList<VPCSubnet>()
+    open var stacks = emptyList<CFStack>()
 
     open var checks = emptyList<Check>()
     open var checkResults = emptyList<AdvisorResult>()
@@ -51,6 +52,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             val volumesJob = async(pool) { fetcher.getVolumes() }
             val cachesJob = async(pool) { fetcher.getCaches() }
             val subnetsJob = async(pool) { fetcher.getSubnets() }
+            val stacksJob = async(pool) { fetcher.getCloudformationStacks() }
 
             reservedInstances = reservedInstancesJob.await()
             instances = instancesJob.await()
@@ -60,6 +62,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             volumes = volumesJob.await()
             caches = cachesJob.await()
             subnets = subnetsJob.await()
+            stacks = stacksJob.await()
 
             instanceIdMap = instances.associateBy { it.instanceId }
             subnetMap = subnets.associateBy { it.id }
@@ -138,6 +141,8 @@ open class RepositoryViewModel(val repository: Repository) {
     open fun volumes() = repository.volumes
     open fun caches() = repository.caches
     open fun subnets() = repository.subnets
+    open fun stacks() = repository.stacks
+
     open fun advisorResults() = repository.checkResults
 
     open fun instanceCount(): Int = repository.instances.count()

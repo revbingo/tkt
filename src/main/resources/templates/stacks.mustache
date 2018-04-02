@@ -1,0 +1,27 @@
+{{> header }}
+     <table id="data-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th class="filter:text">Name</th>
+                <th class="filter:select">Account</th>
+                <th class="filter:select">Region</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#stacks}}
+            <tr>
+                <td>{{name}}</td>
+                <td>{{location.profile.name}}</td>
+                <td>{{location.region}}</td>
+            </tr>
+        {{/stacks}}
+        </tbody>
+    </table>
+{{> footer }}

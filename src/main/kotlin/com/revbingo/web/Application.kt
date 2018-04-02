@@ -33,6 +33,7 @@ class Application(val uiController: UIController, val apiController: APIControll
         mapToTemplate("/subnets", "subnets.mustache")
         mapToTemplate("/dashboard", "dashboard.mustache")
         mapToTemplate("/checks", "checks.mustache")
+        mapToTemplate("/stacks", "stacks.mustache")
 
         get("/dashboard/history", { _, res ->
             res.type("text/plain")

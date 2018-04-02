@@ -193,6 +193,13 @@ data class VPCSubnet(val originalInstance: Subnet, val location: Location): AWSR
     val default = originalInstance.isDefaultForAz
 }
 
+data class CFStack(val originalInstance: com.amazonaws.services.cloudformation.model.Stack, val location: Location): AWSResource {
+    override val id = originalInstance.stackId
+    override var price = 0.0f
+
+    val name = originalInstance.stackName
+}
+
 data class Check(val id: String, val name: String)
 
 open class AdvisorResult(val check: Check, val region: String, val resourceType: String, val resourceId: String, val description: String, val saving: String = "", val rating: String = "None") {
