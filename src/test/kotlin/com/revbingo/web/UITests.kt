@@ -199,7 +199,7 @@ class UITests : SubjectSpek<Application>({
         it("has a bunch of info about a server") {
             val row1 = dataTable("tbody/tr[1]")[0]
 
-            row1 shouldContain "server1|WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|mySubnet|running|test|false|0.832".tsv()
+            row1 shouldContain "server1||WDS|Management|Prod|abc1|m3.large|us-west-1|a|Linux/UNIX|ec2-1-2-3-4|10.11.12.13|mySubnet|running|test|false|0.832".tsv()
         }
     }
 

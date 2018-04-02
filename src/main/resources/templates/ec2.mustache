@@ -4,6 +4,7 @@
         <thead>
             <tr>
                 <th class="filter:text">Name</th>
+                <th></th>
                 <th class="filter:text">Clients</th>
                 <th class="filter:select">Capability</th>
                 <th class="filter:select">Environment</th>
@@ -43,12 +44,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
         </tfoot>
         <tbody>
         {{#instances}}
             <tr>
                 <td style="white-space:nowrap">{{name}}</td>
+                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td style="white-space:nowrap">{{client}}</td>
                 <td style="white-space:nowrap">{{capability}}</td>
                 <td style="white-space:nowrap">{{environment}}</td>
