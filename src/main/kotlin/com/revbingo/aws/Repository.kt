@@ -10,6 +10,8 @@ import java.time.format.DateTimeFormatter
 
 open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider, val databaseAccessor: DatabaseAccessor, private val useAdvisor: Boolean = true) {
 
+    var allResources = mutableMapOf<String, AWSResource>()
+
     open var reservedInstances = emptyList<CountedReservation>()
     open var instances = emptyList<MatchedInstance>()
     open var loadBalancers = emptyList<InstancedLoadBalancer>()
@@ -64,6 +66,19 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             subnets = subnetsJob.await()
             stacks = stacksJob.await()
 
+            val allResourcesList = mutableListOf<AWSResource>()
+            allResourcesList.addAll(reservedInstances)
+            allResourcesList.addAll(instances)
+            allResourcesList.addAll(loadBalancers)
+            allResourcesList.addAll(databases)
+            allResourcesList.addAll(domainNames)
+            allResourcesList.addAll(volumes)
+            allResourcesList.addAll(caches)
+            allResourcesList.addAll(subnets)
+            allResourcesList.addAll(stacks)
+
+            allResourcesList.associateByTo(allResources, { it.id })
+
             instanceIdMap = instances.associateBy { it.instanceId }
             subnetMap = subnets.associateBy { it.id }
 
@@ -71,6 +86,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             updateInstancesInVolumes()
             updateSubnetsInInstances()
             matchReservationsToInstances()
+            markAsCloudformed()
 
             applyPricing()
 
@@ -112,6 +128,16 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     private fun updateSubnetsInInstances() {
         instances.forEach { instance ->
             instance.subnet = subnetMap[instance.subnetId]
+        }
+    }
+
+    private fun markAsCloudformed() {
+        stacks.forEach { stack ->
+            stack.resourceIds.forEach { (physicalId, type) ->
+                allResources[physicalId]?.apply {
+                    stackName = stack.name
+                }
+            }
         }
     }
 

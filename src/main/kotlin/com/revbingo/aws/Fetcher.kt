@@ -3,6 +3,7 @@ package com.revbingo.aws
 import com.amazonaws.client.builder.AwsSyncClientBuilder
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder
+import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder
 import com.amazonaws.services.elasticache.AmazonElastiCacheClientBuilder
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder
@@ -184,7 +185,13 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
             describeStacks().stacks
         }.map { (stack, location) ->
-            CFStack(stack, location)
+
+            CFStack(stack, location).apply {
+                logger.debug("Fetching resources for stack ${stack.stackName}")
+                this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
+                    CFResource(r.physicalResourceId, r.resourceType)
+                }
+            }
         }
     }
 }

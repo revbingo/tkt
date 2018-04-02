@@ -15,11 +15,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-interface AWSResource {
-    val id: String
-    var price: Float
-}
-
 fun computeUnitsFor(instanceSize: String) = when(instanceSize) {
     "micro" -> 0.5f
     "small" -> 1f
@@ -30,7 +25,16 @@ fun computeUnitsFor(instanceSize: String) = when(instanceSize) {
     else -> 0f
 }
 
-data class CountedReservation(val originalReservation: ReservedInstances, val location: Location, var unmatchedCount: Int = originalReservation.instanceCount): AWSResource {
+abstract class AWSResource {
+    abstract val id: String
+    open var price: Float = 0.0f
+
+    var stackName: String? = null
+
+    fun isCloudformed(): Boolean = !stackName.isNullOrBlank()
+}
+
+data class CountedReservation(val originalReservation: ReservedInstances, val location: Location, var unmatchedCount: Int = originalReservation.instanceCount): AWSResource() {
     val state: String = originalReservation.state
     val isActive: Boolean = state == "active"
     val availabilityZone: String? = originalReservation.availabilityZone
@@ -60,7 +64,7 @@ data class CountedReservation(val originalReservation: ReservedInstances, val lo
     override var price: Float = 0.0f
 }
 
-data class MatchedInstance(val originalInstance: Instance, val location: Location, var matched: Boolean = false): AWSResource {
+data class MatchedInstance(val originalInstance: Instance, val location: Location, var matched: Boolean = false): AWSResource() {
     val state: InstanceState = originalInstance.state
     val isRunning: Boolean = this.state.name == "running"
     val availabilityZone: String = originalInstance.placement.availabilityZone
@@ -105,7 +109,7 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) }
 }
 
-data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location, val type: String): AWSResource {
+data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location, val type: String): AWSResource() {
 
     val name: String = originalLoadBalancer.loadBalancerName
     val httpPort: Int? = originalLoadBalancer.listenerDescriptions.forPort(80)?.instancePort
@@ -115,20 +119,19 @@ data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescripti
     var instances = listOf<MatchedInstance>()
 
     override val id: String = originalLoadBalancer.dnsName
-    override var price: Float = 0.0f
 
     fun List<ListenerDescription>.forPort(port: Int): Listener? = this.filter { it.listener.loadBalancerPort == port}.firstOrNull()?.listener
 }
 
 data class ApplicationLoadBalancer(val originalLoadBalancer: LoadBalancer,
                                    val listeners: List<com.amazonaws.services.elasticloadbalancingv2.model.Listener>,
-                                   val targetGroups: List<TargetGroup>): AWSResource {
+                                   val targetGroups: List<TargetGroup>): AWSResource() {
 
     override val id: String = originalLoadBalancer.dnsName
     override var price: Float = 0.0f
 }
 
-data class RDSInstance(val originalInstance: DBInstance, val location: Location): AWSResource {
+data class RDSInstance(val originalInstance: DBInstance, val location: Location): AWSResource() {
 
     val name: String? = originalInstance.dbInstanceIdentifier
     val type: String = originalInstance.dbInstanceClass
@@ -143,7 +146,7 @@ data class RDSInstance(val originalInstance: DBInstance, val location: Location)
     override var price: Float = 0.0f
 }
 
-data class DomainName(val originalInstance: ResourceRecordSet): AWSResource {
+data class DomainName(val originalInstance: ResourceRecordSet): AWSResource() {
     override val id: String = originalInstance.name
     override var price: Float = 0.0f
 
@@ -153,7 +156,7 @@ data class DomainName(val originalInstance: ResourceRecordSet): AWSResource {
     val target: String? = originalInstance.resourceRecords?.firstOrNull()?.value ?: originalInstance.aliasTarget?.dnsName
 }
 
-data class EBSVolume(val originalInstance: Volume, val location: Location): AWSResource {
+data class EBSVolume(val originalInstance: Volume, val location: Location): AWSResource() {
     override var price: Float = 0.0f
     override val id: String = originalInstance.volumeId
 
@@ -167,7 +170,7 @@ data class EBSVolume(val originalInstance: Volume, val location: Location): AWSR
     var attachedInstances = listOf<MatchedInstance>()
 }
 
-data class Cache(val originalInstance: CacheCluster, val location: Location): AWSResource {
+data class Cache(val originalInstance: CacheCluster, val location: Location): AWSResource() {
 
     override val id = originalInstance.cacheClusterId
     override var price = 0.0f
@@ -181,7 +184,7 @@ data class Cache(val originalInstance: CacheCluster, val location: Location): AW
 
 }
 
-data class VPCSubnet(val originalInstance: Subnet, val location: Location): AWSResource {
+data class VPCSubnet(val originalInstance: Subnet, val location: Location): AWSResource() {
 
     override val id = originalInstance.subnetId
     override var price = 0.0f
@@ -193,12 +196,16 @@ data class VPCSubnet(val originalInstance: Subnet, val location: Location): AWSR
     val default = originalInstance.isDefaultForAz
 }
 
-data class CFStack(val originalInstance: com.amazonaws.services.cloudformation.model.Stack, val location: Location): AWSResource {
+data class CFStack(val originalInstance: com.amazonaws.services.cloudformation.model.Stack, val location: Location): AWSResource() {
     override val id = originalInstance.stackId
     override var price = 0.0f
 
     val name = originalInstance.stackName
+
+    var resourceIds = emptyList<CFResource>()
 }
+
+data class CFResource(val physicalId: String, val type: String)
 
 data class Check(val id: String, val name: String)
 
