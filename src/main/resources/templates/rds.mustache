@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th class="filter:text id">Name</th>
+                <th></th>
                 <th class="filter:text">Endpoint</th>
                 <th class="filter:select">Region</th>
                 <th class="filter:select">Size</th>
@@ -22,12 +23,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
         </tfoot>
         <tbody>
         {{#databases}}
             <tr>
                 <td>{{name}}</td>
+                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td>{{endpoint}}</td>
                 <td>{{location.region}}</td>
                 <td>{{type}}</td>

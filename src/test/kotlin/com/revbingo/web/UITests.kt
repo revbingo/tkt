@@ -276,7 +276,7 @@ class UITests : SubjectSpek<Application>({
         }
 
         it("contains a bunch of info about RDS instances") {
-            dataTable("tbody/tr[1]")[0] shouldContain "myDatabase|myDatabase.cdcdqwde.compute.amazonaws.com:3306|us-west-1|db.t2.small|MySQL 5.7.3|false|50 Gb|test".tsv()
+            dataTable("tbody/tr[1]")[0] shouldContain "myDatabase||myDatabase.cdcdqwde.compute.amazonaws.com:3306|us-west-1|db.t2.small|MySQL 5.7.3|false|50 Gb|test".tsv()
         }
     }
 
@@ -290,7 +290,7 @@ class UITests : SubjectSpek<Application>({
         }
 
         it("contains a bunch of info about domain names") {
-            dataTable.firstRow() shouldContain "my.domain.name|CNAME|somewhere.somewhere.com|600".tsv()
+            dataTable.firstRow() shouldContain "my.domain.name||CNAME|somewhere.somewhere.com|600".tsv()
         }
     }
 
@@ -336,7 +336,7 @@ class UITests : SubjectSpek<Application>({
         }
 
         it("contains a bunch of info about subnets") {
-            dataTable.firstRow() shouldContain "subnet-abcd|mySubnet|vpc-123|test|us-west-1a|1.2.3.4/5|false".tsv()
+            dataTable.firstRow() shouldContain "subnet-abcd||mySubnet|vpc-123|test|us-west-1a|1.2.3.4/5|false".tsv()
         }
     }
 

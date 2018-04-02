@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th class="filter:text id">DNS Name</th>
+                <th></th>
                 <th class="filter:select">Type</th>
                 <th class="filter:text">Target</th>
                 <th class="filter:none">TTL</th>
@@ -14,12 +15,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
         </tfoot>
         <tbody>
         {{#domainNames}}
             <tr>
                 <td>{{dnsName}}</td>
+                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td>{{type}}</td>
                 <td>{{target}}</td>
                 <td>{{ttl}}</td>

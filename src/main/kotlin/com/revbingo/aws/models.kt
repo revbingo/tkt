@@ -147,7 +147,7 @@ data class RDSInstance(val originalInstance: DBInstance, val location: Location)
 }
 
 data class DomainName(val originalInstance: ResourceRecordSet): AWSResource() {
-    override val id: String = originalInstance.name
+    override val id: String = originalInstance.name.removeSuffix(".")
     override var price: Float = 0.0f
 
     val dnsName: String = originalInstance.name

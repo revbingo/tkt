@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th class="filter:text id">ID</th>
+                <th></th>
                 <th class="filter:text id">Name</th>
                 <th class="filter:text">VPC</th>
                 <th class="filter:select">Account</th>
@@ -20,12 +21,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
         </tfoot>
         <tbody>
         {{#subnets}}
             <tr>
                 <td>{{id}}</td>
+                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td>{{name}}</td>
                 <td>{{vpc}}</td>
                 <td>{{location.profile.name}}</td>
