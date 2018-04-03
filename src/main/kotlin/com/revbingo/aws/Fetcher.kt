@@ -187,13 +187,30 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         }.map { (stack, location) ->
 
             CFStack(stack, location).apply {
-                logger.debug("Fetching resources for stack ${stack.stackName}")
-                this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
-                    CFResource(r.physicalResourceId, r.resourceType)
+                retry(3) {
+                    logger.debug("Fetching resources for stack ${stack.stackName}")
+                    this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
+                        CFResource(r.physicalResourceId, r.resourceType)
+                    }
                 }
             }
         }
     }
+
+    fun <T> retry(times: Int, lambda: () -> T): T {
+        var lastException: Throwable? = null
+        for(i in 0 until times) {
+            try {
+                return lambda()
+            } catch(e:Exception) {
+                lastException = e
+                logger.warn("Error ${e.message}.  Retrying in ${i * 1000} millseconds")
+                Thread.sleep((i * 1000).toLong())
+            }
+        }
+        throw lastException!!
+    }
+
 }
 
 /* EXTENSIONS */
