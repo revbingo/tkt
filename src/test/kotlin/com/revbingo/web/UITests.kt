@@ -215,7 +215,7 @@ class UITests : SubjectSpek<Application>({
         it("has a bunch of info about a load balancer") {
             val row1 = dataTable("tbody/tr[1]")[0]
 
-            row1 shouldContain "theELB|dns-name|us-west-1|Classic|test|8080|8443|0".tsv()
+            row1 shouldContain "theELB||dns-name|us-west-1|Classic|test|8080|8443|0".tsv()
         }
     }
 
