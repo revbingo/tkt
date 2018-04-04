@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th class="filter:text id">Name</th>
+                <th></th>
                 <th class="filter:text">DNS Name</th>
                 <th class="filter:select">Region</th>
                 <th class="filter:select">Type</th>
@@ -24,12 +25,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
         </tfoot>
         <tbody>
         {{#loadBalancers}}
             <tr>
                 <td>{{name}}</td>
+                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td>{{dnsName}}</td>
                 <td>{{location.region}}</td>
                 <td>{{type}}</td>

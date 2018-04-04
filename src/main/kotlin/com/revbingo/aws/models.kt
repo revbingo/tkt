@@ -118,7 +118,7 @@ data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescripti
     val dnsName: String = originalLoadBalancer.dnsName
     var instances = listOf<MatchedInstance>()
 
-    override val id: String = originalLoadBalancer.dnsName
+    override val id: String = originalLoadBalancer.loadBalancerName
 
     fun List<ListenerDescription>.forPort(port: Int): Listener? = this.filter { it.listener.loadBalancerPort == port}.firstOrNull()?.listener
 }

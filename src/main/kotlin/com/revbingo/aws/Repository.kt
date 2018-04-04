@@ -133,7 +133,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
 
     private fun markAsCloudformed() {
         stacks.forEach { stack ->
-            stack.resourceIds.forEach { (physicalId, type) ->
+            stack.resourceIds.forEach { (physicalId, _) ->
                 allResources[physicalId]?.apply {
                     stackName = stack.name
                 }
