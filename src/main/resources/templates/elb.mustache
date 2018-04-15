@@ -32,7 +32,7 @@
         {{#loadBalancers}}
             <tr>
                 <td>{{name}}</td>
-                <td>{{#isCloudformed}}<i class="fas fa-cloud"></i>{{/isCloudformed}}</td>
+                <td>{{#isCloudformed}}<i title="{{stackName}}" class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td>{{dnsName}}</td>
                 <td>{{location.region}}</td>
                 <td>{{type}}</td>
