@@ -36,7 +36,7 @@
                 <td>{{type}}</td>
                 <td>{{size}}</td>
                 <td>{{iops}}</td>
-                <td>{{#attachedInstanceIds}}<a href="/?id={{.}}">{{.}}</a>{{/attachedInstanceIds}}</td>
+                <td>{{#attachedInstances}}<a href="/?id={{id}}">{{name}}</a>{{/attachedInstances}}</td>
                 <td>{{location.profile.name}}</td>
             </tr>
         {{/volumes}}

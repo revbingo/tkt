@@ -111,9 +111,13 @@ class UITests : SubjectSpek<Application>({
                     iops = 30
                     encrypted = false
                     state = "in-use"
-                    setAttachments(listOf(VolumeAttachment().apply { instanceId = "77777"}))
+                    setAttachments(listOf(VolumeAttachment()))
                     setTags(listOf(Tag("Name", "aVolume")))
-                }, Location(Profile("test"), "us-west-1"))
+                }, Location(Profile("test"), "us-west-1")).apply {
+                    attachedInstances = matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(Tag("Name", "server2")), state = "stopped").apply {
+                        this.first().price = 0.4f
+                    }
+                }
         )
 
         on { caches } doReturn listOf(
@@ -304,11 +308,11 @@ class UITests : SubjectSpek<Application>({
         }
 
         it("contains a bunch of info about volumes") {
-            dataTable.firstRow() shouldContain "aVolume|1234abc|us-west-1|in-use|standard|50|30|77777|test".tsv()
+            dataTable.firstRow() shouldContain "aVolume|1234abc|us-west-1|in-use|standard|50|30|server2|test".tsv()
         }
 
         it("has a link to the instance") {
-            assertThat(dataTable.firstRow().single("td[8]/a").attribute("href"), equalTo("/?id=77777"))
+            assertThat(dataTable.firstRow().single("td[8]/a").attribute("href"), equalTo("/?id=def1"))
         }
     }
 
