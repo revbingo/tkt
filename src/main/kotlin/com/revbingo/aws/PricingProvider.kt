@@ -30,7 +30,7 @@ class EC2InstancesDotInfoPricingProvider(pricingFile: File): PricingProvider {
         val reservation = if(instance.matched) "reserved.['yrTerm1Standard.noUpfront']" else "ondemand"
 
         val obj: JSONArray = JsonPath.read(pricingInfo, "$[?].pricing.${instance.region}.$os.$reservation", instanceFilter)
-        val price : String = obj[0].toString()
+        val price : String = obj[0]?.toString() ?: "0"
         return price.toFloat()
     }
 }
