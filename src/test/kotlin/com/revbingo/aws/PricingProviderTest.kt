@@ -1,9 +1,7 @@
 package com.revbingo.aws
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.nhaarman.mockito_kotlin.mock
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.subject.SubjectSpek
@@ -47,6 +45,12 @@ class PricingProviderTest: SubjectSpek<PricingProvider>({
 
             assertThat(subject.getPriceFor(eu), equalTo(0.047f))
             assertThat(subject.getPriceFor(us), equalTo(0.044f))
+        }
+
+        it("returns zero when instance type doesn't exist") {
+            val newtype = MatchedInstance(instance(type = "m10.small", az = "eu-west-1a", platform = "Linux/UNIX"), testAccount)
+
+            assertThat(subject.getPriceFor(newtype), equalTo(0.0f))
         }
     }
 })

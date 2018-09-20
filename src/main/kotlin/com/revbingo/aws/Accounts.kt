@@ -34,4 +34,5 @@ class AWSProfiles(filePath: String) : Accounts {
     }
 
     override val regions = listOf(Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2, Regions.EU_WEST_1, Regions.AP_SOUTHEAST_1, Regions.AP_SOUTHEAST_2)
+//    override val regions = listOf(Regions.EU_WEST_1)
 }
