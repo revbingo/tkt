@@ -488,6 +488,33 @@ class ModelsTest : Spek({
         }
     }
 
+    describe("a spot request") {
+        it("gets id and from the spot request") {
+            val originalInstance = SpotInstanceRequest().apply {
+                this.spotInstanceRequestId = "instance-request"
+                this.spotPrice = "0.01"
+                this.actualBlockHourlyPrice = "0.002"
+            }
+
+            val subject = SpotRequest(originalInstance)
+
+            assertThat(subject.id, equalTo("instance-request"))
+            assertThat(subject.price, equalTo(0.002f))
+        }
+
+        it("gets price as the spotPrice if hourly is not available") {
+            val originalInstance = SpotInstanceRequest().apply {
+                this.spotInstanceRequestId = "instance-request"
+                this.spotPrice = "0.01"
+            }
+
+            val subject = SpotRequest(originalInstance)
+
+            assertThat(subject.id, equalTo("instance-request"))
+            assertThat(subject.price, equalTo(0.01f))
+        }
+    }
+
     describe("Advisor results") {
         it("maps low utiliisation instances") {
             val result = AdvisorResult.create(check("Low Utilization Amazon EC2 Instances"), result("[eu-west-1a, i-095fb8155d58215ae, mongo-uat-01, t2.micro, $9.36, null, null, null, null, 0.9%  1.05MB, 0.7%  0.03MB, 0.8%  0.20MB, 0.5%  0.03MB, 0.4%  0.00MB, 0.4%  0.00MB, 0.4%  0.00MB, 0.4%  0.00MB, 0.4%  0.00MB, 0.4%  0.00MB, 0.5%, 0.13MB, 10 days]"))

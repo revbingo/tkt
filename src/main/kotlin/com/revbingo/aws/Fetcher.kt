@@ -5,6 +5,7 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder
+import com.amazonaws.services.ec2.model.SpotInstanceStatus
 import com.amazonaws.services.elasticache.AmazonElastiCacheClientBuilder
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder
 import com.amazonaws.services.elasticloadbalancing.model.Listener
@@ -37,6 +38,7 @@ interface Fetcher {
     fun getCaches(): List<Cache>
     fun getSubnets(): List<VPCSubnet>
     fun getCloudformationStacks(): List<CFStack>
+    fun getSpotInstanceRequests(): List<SpotRequest>
 }
 
 open class ClientGenerator(val accounts: Accounts) {
@@ -182,18 +184,30 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
     }
 
     override fun getCloudformationStacks(): List<CFStack> {
-        return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
-            describeStacks().stacks
-        }.map { (stack, location) ->
+        try {
+            return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
+                describeStacks().stacks
+            }.map { (stack, location) ->
 
-            CFStack(stack, location).apply {
-                retry(3) {
-                    logger.debug("Fetching resources for stack ${stack.stackName}")
-                    this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
-                        CFResource(r.physicalResourceId, r.resourceType)
+                CFStack(stack, location).apply {
+                    retry(3) {
+                        logger.debug("Fetching resources for stack ${stack.stackName}")
+                        this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
+                            CFResource(r.physicalResourceId, r.resourceType)
+                        }
                     }
                 }
             }
+        } catch(e: Exception) {
+            return emptyList()
+        }
+    }
+
+    override fun getSpotInstanceRequests(): List<SpotRequest> {
+        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
+            describeSpotInstanceRequests().spotInstanceRequests
+        }.map{ (spotRequest, location) ->
+            SpotRequest(spotRequest)
         }
     }
 

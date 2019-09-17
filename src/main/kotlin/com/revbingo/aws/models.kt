@@ -107,6 +107,8 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     fun sameProductAs(reservation: CountedReservation) = this.platform.equals(reservation.productDescription, ignoreCase = true)
 
     fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) }
+
+    fun isSpotInstance() = (originalInstance.spotInstanceRequestId != null)
 }
 
 data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location, val type: String): AWSResource() {
@@ -208,6 +210,11 @@ data class CFStack(val originalInstance: com.amazonaws.services.cloudformation.m
 data class CFResource(val physicalId: String, val type: String)
 
 data class Check(val id: String, val name: String)
+
+data class SpotRequest(val originalInstance: SpotInstanceRequest): AWSResource() {
+    override val id = originalInstance.spotInstanceRequestId
+    override var price = originalInstance.actualBlockHourlyPrice?.toFloat() ?: originalInstance.spotPrice.toFloat()
+}
 
 open class AdvisorResult(val check: Check, val region: String, val resourceType: String, val resourceId: String, val description: String, val saving: String = "", val rating: String = "None") {
     companion object {

@@ -21,6 +21,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     open var caches = emptyList<Cache>()
     open var subnets = emptyList<VPCSubnet>()
     open var stacks = emptyList<CFStack>()
+    open var spots = emptyList<SpotRequest>()
 
     open var checks = emptyList<Check>()
     open var checkResults = emptyList<AdvisorResult>()
@@ -55,6 +56,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             val cachesJob = async(pool) { fetcher.getCaches() }
             val subnetsJob = async(pool) { fetcher.getSubnets() }
             val stacksJob = async(pool) { fetcher.getCloudformationStacks() }
+            val spotsJob = async(pool) { fetcher.getSpotInstanceRequests() }
 
             reservedInstances = reservedInstancesJob.await()
             instances = instancesJob.await()
@@ -65,6 +67,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             caches = cachesJob.await()
             subnets = subnetsJob.await()
             stacks = stacksJob.await()
+            spots = spotsJob.await()
 
             val allResourcesList = mutableListOf<AWSResource>()
             allResourcesList.addAll(reservedInstances)
@@ -76,6 +79,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             allResourcesList.addAll(caches)
             allResourcesList.addAll(subnets)
             allResourcesList.addAll(stacks)
+            allResourcesList.addAll(spots)
 
             allResourcesList.associateByTo(allResources, { it.id })
 
@@ -105,7 +109,10 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
 
     private fun applyPricing() {
         instances.forEach {
-            it.price = pricingProvider.getPriceFor(it)
+            it.price =  when {
+                it.isSpotInstance() -> allResources[it.originalInstance.spotInstanceRequestId]?.price ?: 0.0f
+                else -> pricingProvider.getPriceFor(it)
+            }
         }
     }
 
