@@ -1,5 +1,7 @@
 package com.revbingo.web
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.BasicAWSCredentials
 import com.nhaarman.mockito_kotlin.atLeast
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
@@ -15,8 +17,8 @@ class ApplicationTest: Spek({
     describe("the application") {
         it("has a timer to trigger the repo update") {
             val mockRepo = mock<Repository>()
-            val mockProfiles = mock<Accounts>() {
-                on { creds } doReturn mapOf("test" to Pair("key", "secret"))
+            val mockProfiles = mock<Accounts> {
+                on { creds } doReturn mapOf("test" to AWSStaticCredentialsProvider(BasicAWSCredentials("key", "secret")))
             }
             val application = createApplication(updatePeriodMillis = 100, repository = mockRepo, accounts = mockProfiles)
 

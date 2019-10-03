@@ -22,6 +22,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     open var subnets = emptyList<VPCSubnet>()
     open var stacks = emptyList<CFStack>()
     open var spots = emptyList<SpotRequest>()
+    open var targetGroups = emptyList<TargetGroup>()
 
     open var checks = emptyList<Check>()
     open var checkResults = emptyList<AdvisorResult>()
@@ -57,6 +58,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             val subnetsJob = async(pool) { fetcher.getSubnets() }
             val stacksJob = async(pool) { fetcher.getCloudformationStacks() }
             val spotsJob = async(pool) { fetcher.getSpotInstanceRequests() }
+            val tgJob = async(pool) { fetcher.getTargetGroups() }
 
             reservedInstances = reservedInstancesJob.await()
             instances = instancesJob.await()
@@ -68,6 +70,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             subnets = subnetsJob.await()
             stacks = stacksJob.await()
             spots = spotsJob.await()
+            targetGroups = tgJob.await()
 
             val allResourcesList = mutableListOf<AWSResource>()
             allResourcesList.addAll(reservedInstances)
@@ -80,6 +83,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             allResourcesList.addAll(subnets)
             allResourcesList.addAll(stacks)
             allResourcesList.addAll(spots)
+            allResourcesList.addAll(targetGroups)
 
             allResourcesList.associateByTo(allResources, { it.id })
 
@@ -124,6 +128,10 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
         loadBalancers.forEach { lb ->
             lb.instances = lb.originalLoadBalancer.instances.map { instanceIdMap[it.instanceId] }.filterNotNull()
         }
+
+        targetGroups.forEach { tg ->
+            tg.originalInstance.loadBalancerArns
+        }
     }
 
     private fun updateInstancesInVolumes() {
@@ -158,6 +166,16 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
             checks = fetcher.getTrustedAdvisorChecks()
         }
         checkResults = fetcher.getAdvisorResults(checks)
+    }
+
+    public fun totalComputeUnitsPerFamily(): Map<String, Double> {
+        return instances.groupBy {
+            "${it.family} (${it.platform}) - ${it.region}"
+        }.mapValues { entry ->
+            entry.value.sumByDouble { instance ->
+                instance.computeUnits.toDouble()
+            }
+        }
     }
 
 }
@@ -196,6 +214,6 @@ open class RepositoryViewModel(val repository: Repository) {
     fun Int.asPercentage():Int = (this * 100)/(instanceCount())
 
     open fun totalCostPerHour(): Double = repository.instances.filter { it.isRunning }.sumByDouble { it.price.toDouble() }
-
+    open fun totalComputeUnits(): Set<Map.Entry<String, Double>> = repository.totalComputeUnitsPerFamily().entries
     open fun formattedCost(): String = "%.2f".format(totalCostPerHour())
 }

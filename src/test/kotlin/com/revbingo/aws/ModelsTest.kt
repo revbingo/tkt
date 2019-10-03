@@ -387,6 +387,21 @@ class ModelsTest : Spek({
 
             assertThat(subject.id, equalTo(subject.name))
         }
+
+        it("doesn't need an endpoint if the instance is starting") {
+            val originalInstance = DBInstance().apply {
+                dbInstanceIdentifier = "myDatabase"
+                dbInstanceClass = "db.t2.small"
+                engine = "MySQL"
+                engineVersion = "5.7.3"
+                multiAZ = false
+                allocatedStorage = 50
+                availabilityZone = "us-west-1b"
+            }
+
+            val subject = RDSInstance(originalInstance, Location(Profile("test"), "us-west-1"))
+            assertThat(subject.endpoint, equalTo(""))
+        }
     }
 
     describe("an EBS volume") {

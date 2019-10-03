@@ -5,7 +5,7 @@
             <tr>
                 <th class="filter:text">Name</th>
                 <th></th>
-                <th class="filter:text">Clients</th>
+                <th class="filter:text">Client</th>
                 <th class="filter:select">Capability</th>
                 <th class="filter:select">Environment</th>
                 <th class="filter:text id">Instance ID</th>
@@ -100,6 +100,24 @@
                 <td>{{end}}</td>
             </tr>
         {{/reservations}}
+
     </table>
 
+    <p>&nbsp;</p>
+    <a name="capacity"></a><p style="font-size:1.4em;">Capacity by Family:</p>
+
+    <table class="table">
+        <tr>
+            <th>Family</th>
+            <th>Units</th>
+        </tr>
+
+        {{#totalComputeUnits}}
+            <tr>
+                <td>{{key}}</td>
+                <td>{{value}}</td>
+            </tr>
+        {{/totalComputeUnits}}
+
+    </table>
 {{> footer }}

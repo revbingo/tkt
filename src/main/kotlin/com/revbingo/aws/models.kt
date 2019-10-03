@@ -142,7 +142,7 @@ data class RDSInstance(val originalInstance: DBInstance, val location: Location)
     val engineVersion: String = originalInstance.engineVersion
     val multiAZ: Boolean = originalInstance.isMultiAZ
     val storage: Int = originalInstance.allocatedStorage
-    val endpoint: String = "${originalInstance.endpoint.address}:${originalInstance.endpoint.port}"
+    val endpoint: String = if(originalInstance.endpoint != null) "${originalInstance.endpoint?.address}:${originalInstance.endpoint?.port}" else ""
 
     override val id: String = originalInstance.dbInstanceIdentifier
     override var price: Float = 0.0f
@@ -214,6 +214,11 @@ data class Check(val id: String, val name: String)
 data class SpotRequest(val originalInstance: SpotInstanceRequest): AWSResource() {
     override val id = originalInstance.spotInstanceRequestId
     override var price = originalInstance.actualBlockHourlyPrice?.toFloat() ?: originalInstance.spotPrice.toFloat()
+}
+
+data class TargetGroup(val originalInstance: TargetGroup): AWSResource() {
+    override val id = originalInstance.targetGroupArn
+    override var price = 0.0f
 }
 
 open class AdvisorResult(val check: Check, val region: String, val resourceType: String, val resourceId: String, val description: String, val saving: String = "", val rating: String = "None") {

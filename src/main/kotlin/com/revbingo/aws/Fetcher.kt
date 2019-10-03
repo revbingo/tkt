@@ -39,6 +39,7 @@ interface Fetcher {
     fun getSubnets(): List<VPCSubnet>
     fun getCloudformationStacks(): List<CFStack>
     fun getSpotInstanceRequests(): List<SpotRequest>
+    fun getTargetGroups(): List<TargetGroup>
 }
 
 open class ClientGenerator(val accounts: Accounts) {
@@ -188,11 +189,12 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
             return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
                 describeStacks().stacks
             }.map { (stack, location) ->
-
                 CFStack(stack, location).apply {
                     retry(3) {
                         logger.debug("Fetching resources for stack ${stack.stackName}")
-                        this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials).withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest().withStackName(stack.stackName)).stackResources.map { r ->
+                        this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials)
+                                .withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest()
+                                        .withStackName(stack.stackName)).stackResources.map { r ->
                             CFResource(r.physicalResourceId, r.resourceType)
                         }
                     }
@@ -211,18 +213,28 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
         }
     }
 
-    fun <T> retry(times: Int, lambda: () -> T): T {
+    override fun getTargetGroups(): List<TargetGroup> {
+        var clientBuilder = com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder.standard()
+        return clientGenerator.eachLocation(clientBuilder) {
+            val request = DescribeTargetGroupsRequest()
+            describeTargetGroups(request).targetGroups
+        }.map {
+            TargetGroup(it.first)
+        }
+    }
+
+    fun <T> retry(times: Int, swallow: Boolean = false, lambda: () -> T) {
         var lastException: Throwable? = null
         for(i in 0 until times) {
             try {
-                return lambda()
+                lambda()
             } catch(e:Exception) {
                 lastException = e
                 logger.warn("Error ${e.message}.  Retrying in ${i * 1000} millseconds")
                 Thread.sleep((i * 1000).toLong())
             }
         }
-        throw lastException!!
+        if(!swallow && lastException != null) throw lastException
     }
 
 }
