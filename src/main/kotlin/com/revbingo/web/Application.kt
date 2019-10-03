@@ -35,23 +35,22 @@ class Application(val uiController: UIController, val apiController: APIControll
         mapToTemplate("/checks", "checks.mustache")
         mapToTemplate("/stacks", "stacks.mustache")
 
-        get("/dashboard/history", { _, res ->
+        get("/dashboard/history") { _, res ->
             res.type("text/plain")
             apiController.dashboardHistory()
-        })
+        }
 
-        get("/update", { _, res ->
+        get("/update") { _, res ->
             uiController.updateRepository()
             res.redirect("/")
-        })
+        }
 
-        get("/api/ssh", { req, res ->
+        get("/api/ssh") { req, res ->
             res.type("text/plain")
-
             apiController.generateSshConfig(req.queryParams("account"))
-        })
+        }
 
-        get("/api/instances", { req, res ->
+        get("/api/instances") { req, res ->
             res.type("text/plain")
 
             val elbName = req.queryParams("name").orEmpty()
@@ -68,12 +67,12 @@ class Application(val uiController: UIController, val apiController: APIControll
                 res.status(400)
                 "name parameter must be specified"
             }
-        })
+        }
 
-        exception(Exception::class.java, { exc, _, res ->
+        exception(Exception::class.java) { exc, _, res ->
             logger.error(exc.message)
             res.body(exc.message)
-        })
+        }
 
         awaitInitialization()
         ignited = true
