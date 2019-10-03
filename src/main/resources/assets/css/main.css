@@ -177,3 +177,7 @@ input,select {
     border-color: #ff8200;
     color: #34495E;
 }
+
+span.stopped {
+    color: #aaaaaa;
+}

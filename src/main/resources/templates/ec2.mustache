@@ -50,7 +50,7 @@
         <tbody>
         {{#instances}}
             <tr>
-                <td style="white-space:nowrap">{{name}}</td>
+                <td style="white-space:nowrap"><span {{#isNotRunning}}class="stopped"{{/isNotRunning}}>{{name}}</span></td>
                 <td>{{#isCloudformed}}<i title="{{stackName}}" class="fas fa-cloud"></i>{{/isCloudformed}}</td>
                 <td style="white-space:nowrap">{{client}}</td>
                 <td style="white-space:nowrap">{{capability}}</td>

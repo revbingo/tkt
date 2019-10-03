@@ -109,6 +109,8 @@ data class MatchedInstance(val originalInstance: Instance, val location: Locatio
     fun matches(reservation: CountedReservation) = reservation.let { sameZoneAs(it) && sameTypeAs(it) && sameProductAs(it) }
 
     fun isSpotInstance() = (originalInstance.spotInstanceRequestId != null)
+
+    fun isNotRunning() = state.name != "running"
 }
 
 data class InstancedLoadBalancer(val originalLoadBalancer: LoadBalancerDescription, val location: Location, val type: String): AWSResource() {
