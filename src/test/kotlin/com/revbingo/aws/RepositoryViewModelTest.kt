@@ -2,18 +2,20 @@ package com.revbingo.aws
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+
 import com.revbingo.db.DatabaseAccessor
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
+import software.amazon.awssdk.regions.Region
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class RepositoryViewModelTest : Spek({
 
-    val testAccount = Location(Profile("Test"), "eu-west-1")
+    val testAccount = Location(Profile("Test"), Region.EU_WEST_1)
 
     describe("the repository") {
         it("returns a count of running instances") {

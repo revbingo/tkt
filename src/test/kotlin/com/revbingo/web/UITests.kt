@@ -1,18 +1,5 @@
 package com.revbingo.web
 
-import com.amazonaws.services.cloudformation.model.Stack
-import com.amazonaws.services.ec2.model.Subnet
-import com.amazonaws.services.ec2.model.Tag
-import com.amazonaws.services.ec2.model.Volume
-import com.amazonaws.services.ec2.model.VolumeAttachment
-import com.amazonaws.services.elasticache.model.CacheCluster
-import com.amazonaws.services.elasticloadbalancing.model.Listener
-import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
-import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription
-import com.amazonaws.services.rds.model.DBInstance
-import com.amazonaws.services.rds.model.Endpoint
-import com.amazonaws.services.route53.model.ResourceRecord
-import com.amazonaws.services.route53.model.ResourceRecordSet
 import com.gargoylesoftware.htmlunit.WebClient
 import com.gargoylesoftware.htmlunit.html.DomElement
 import com.gargoylesoftware.htmlunit.html.DomNode
@@ -20,137 +7,163 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage
 import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.should.shouldMatch
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.never
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockitokotlin2.*
+
 import com.revbingo.aws.*
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.subject.SubjectSpek
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.cloudformation.model.Stack
+import software.amazon.awssdk.services.ec2.model.Subnet
+import software.amazon.awssdk.services.ec2.model.Tag
+import software.amazon.awssdk.services.ec2.model.Volume
+import software.amazon.awssdk.services.ec2.model.VolumeAttachment
+import software.amazon.awssdk.services.elasticache.model.CacheCluster
+import software.amazon.awssdk.services.elasticloadbalancing.model.Listener
+import software.amazon.awssdk.services.elasticloadbalancing.model.ListenerDescription
+import software.amazon.awssdk.services.elasticloadbalancing.model.LoadBalancerDescription
+import software.amazon.awssdk.services.rds.model.DBInstance
+import software.amazon.awssdk.services.route53.model.ResourceRecord
+import software.amazon.awssdk.services.route53.model.ResourceRecordSet
+
 import java.time.LocalDateTime
 
 class UITests : SubjectSpek<Application>({
+    val theSubnet =  VPCSubnet(Subnet.builder()
+            .subnetId("subnet-abcd")
+            .vpcId("vpc-123")
+            .tags(listOf(tag("Name", "mySubnet")))
+            .cidrBlock("1.2.3.4/5")
+            .availabilityZone("us-west-1a")
+            .defaultForAz(false)
+            .build()
+            ,  Location(Profile("test"), Region.US_WEST_1))
 
     val mockRepo: Repository = mock {
-        val theSubnet =  VPCSubnet(Subnet().apply {
-            this.subnetId = "subnet-abcd"
-            this.vpcId = "vpc-123"
-            setTags(listOf(Tag("Name", "mySubnet")))
-            this.cidrBlock = "1.2.3.4/5"
-            this.availabilityZone = "us-west-1a"
-            this.defaultForAz = false
-        },  Location(Profile("test"), "us-west-1"))
 
-        on { subnets } doReturn listOf(
-               theSubnet
-        )
 
-        on { instances } doReturn listOf(
-                matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
-                        id = "abc1", vpcId = "vpc", subnet = theSubnet, tags = listOf(Tag("Name", "server1"), Tag("Capability", "Management"),
-                        Tag("Client", "WDS"), Tag("Environment", "Prod"))).apply {
-                    this.first().price = 0.832f
-                },
-                matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(Tag("Name", "server2")), state = "stopped").apply {
-                    this.first().price = 0.4f
-                },
-                matchedInstances(count = 1, az = "ap-southeastt-1a", id = "ghi1", tags = listOf(Tag("Name", "server3"))).apply {
-                    this.first().matched = true
-                    this.first().price = 0.3f
-                }
-        ).flatten()
+//        on { subnets } doReturn listOf(
+//               theSubnet
+//        )
 
-        on { reservedInstances } doReturn countedReservations(count = 3, type = "t2.large").apply {
-            this.first().unmatchedCount = 1
-            this.first().computeUnits = 4.0f
-        }
+//        whenever(it.toString()).thenReturn("hi!")
+        on { toString() } doReturn "hi!"
 
-        on { loadBalancers } doReturn listOf(
-                InstancedLoadBalancer(LoadBalancerDescription().apply {
-                    loadBalancerName = "theELB"
-                    dnsName = "dns-name"
-                    setListenerDescriptions(listOf(ListenerDescription().apply {
-                        listener = Listener("HTTP", 80, 8080)
-                    },ListenerDescription().apply {
-                        listener = Listener("HTTP", 443, 8443)
-                    }))
-                }, Location(Profile("test"), "us-west-1"), "Classic")
-        )
-
-        on { databases } doReturn listOf(
-                RDSInstance(DBInstance().apply {
-                    dbInstanceIdentifier = "myDatabase"
-                    dbInstanceClass = "db.t2.small"
-                    engine = "MySQL"
-                    engineVersion = "5.7.3"
-                    multiAZ = false
-                    allocatedStorage = 50
-                    availabilityZone = "us-west-1b"
-                    endpoint = Endpoint().apply {
-                        address = "myDatabase.cdcdqwde.compute.amazonaws.com"
-                        port = 3306
-                    }
-                }, Location(Profile("test"), "us-west-1"))
-        )
-
-        on { domainNames } doReturn listOf(
-                DomainName(ResourceRecordSet().apply {
-                    name = "my.domain.name"
-                    type = "CNAME"
-                    ttl = 600
-                    setResourceRecords(listOf(ResourceRecord("somewhere.somewhere.com")))
-                })
-        )
-
-        on { volumes } doReturn listOf(
-                EBSVolume(Volume().apply {
-                    volumeType = "standard"
-                    volumeId = "1234abc"
-                    size = 50
-                    iops = 30
-                    encrypted = false
-                    state = "in-use"
-                    setAttachments(listOf(VolumeAttachment()))
-                    setTags(listOf(Tag("Name", "aVolume")))
-                }, Location(Profile("test"), "us-west-1")).apply {
-                    attachedInstances = matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(Tag("Name", "server2")), state = "stopped").apply {
-                        this.first().price = 0.4f
-                    }
-                }
-        )
-
-        on { caches } doReturn listOf(
-                Cache(CacheCluster().apply {
-                    this.cacheClusterId = "clusterId"
-                    this.configurationEndpoint = com.amazonaws.services.elasticache.model.Endpoint().apply {
-                        address = "mycache.amazon.com"
-                        port = 11211
-                    }
-                    this.cacheNodeType = "cache.m1.small"
-                    this.engine = "memcached"
-                    this.engineVersion = "1.4.5"
-                    this.cacheClusterStatus = "available"
-                    this.numCacheNodes = 3
-                }, Location(Profile("test"), "us-west-1"))
-        )
-
-        on { checkResults} doReturn listOf(
-                AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
-        )
-
-        on { stacks } doReturn listOf(
-                CFStack(Stack().apply {
-                    this.stackId = "123stack"
-                    this.stackName = "MyCFStack"
-                    this.stackStatus = "CREATE_COMPLETE"
-                }, Location(Profile("test"), "us-west-1"))
-        )
-
-        on { updateTime } doReturn LocalDateTime.now()
-
-        on { inError } doReturn true
-        on { errorMessage } doReturn "something went wrong"
+//        on { instances } doReturn listOf(
+//                matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
+//                        id = "abc1", vpcId = "vpc", subnet = theSubnet, tags = listOf(tag("Name", "server1"), tag("Capability", "Management"),
+//                        tag("Client", "WDS"), tag("Environment", "Prod"))).apply {
+//                    this.first().price = 0.832f
+//                },
+//                matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
+//                    this.first().price = 0.4f
+//                },
+//                matchedInstances(count = 1, az = "ap-southeastt-1a", id = "ghi1", tags = listOf(tag("Name", "server3"))).apply {
+//                    this.first().matched = true
+//                    this.first().price = 0.3f
+//                }
+//        ).flatten()
+////
+//        on { reservedInstances } doReturn countedReservations(count = 3, type = "t2.large").apply {
+//            this.first().unmatchedCount = 1
+//            this.first().computeUnits = 4.0f
+//        }
+//
+//        on { loadBalancers } doReturn listOf(
+//                InstancedLoadBalancer(LoadBalancerDescription.builder()
+//                        .loadBalancerName("theELB")
+//                        .dnsName("dns-name")
+//                        .listenerDescriptions(listOf(
+//                                ListenerDescription.builder()
+//                                    .listener(Listener.builder().protocol("HTTP").loadBalancerPort(80).instancePort(8080).build())
+//                                    .build()
+//                                , ListenerDescription.builder()
+//                                .listener(Listener.builder().protocol("HTTPS").loadBalancerPort(443).instancePort(8443).build())
+//                                .build()))
+//                        .build()
+//                , Location(Profile("test"), Region.US_WEST_1), "Classic")
+//        )
+//
+//        on { databases } doReturn listOf(
+//                RDSInstance(DBInstance.builder()
+//                        .dbInstanceIdentifier("myDatabase")
+//                        .dbInstanceClass("db.t2.small")
+//                        .engine("MySQL")
+//                        .engineVersion("5.7.3")
+//                        .multiAZ(false)
+//                        .allocatedStorage(50)
+//                        .availabilityZone("us-west-1b")
+//                        .endpoint(software.amazon.awssdk.services.rds.model.Endpoint.builder()
+//                                        .address("myDatabase.cdcdqwde.compute.amazonaws.com")
+//                                        .port(3306)
+//                                        .build())
+//                        .build()
+//                , Location(Profile("test"), Region.US_WEST_1))
+//        )
+//
+//        on { domainNames } doReturn listOf(
+//                DomainName(ResourceRecordSet.builder()
+//                    .name("my.domain.name")
+//                    .type("CNAME")
+//                    .ttl(600)
+//                    .resourceRecords(listOf(ResourceRecord.builder().value("somewhere.somewhere.com").build()))
+//                    .build()
+//                )
+//        )
+//
+//        on { volumes } doReturn listOf(
+//                EBSVolume(Volume.builder()
+//                        .volumeType("standard")
+//                        .volumeId("1234abc")
+//                        .size(50)
+//                        .iops(30)
+//                        .encrypted(false)
+//                        .state("in-use")
+//                        .attachments(listOf(VolumeAttachment.builder().build()))
+//                        .tags(listOf(tag("Name", "aVolume")))
+//                        .build()
+//                , Location(Profile("test"), Region.US_WEST_1)).apply {
+//                    attachedInstances = matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
+//                        this.first().price = 0.4f
+//                    }
+//                }
+//        )
+//
+//        on { caches } doReturn listOf(
+//                Cache(CacheCluster.builder()
+//                    .cacheClusterId("clusterId")
+//                    .configurationEndpoint(software.amazon.awssdk.services.elasticache.model.Endpoint.builder()
+//                            .address("mycache.amazon.com")
+//                            .port(11211)
+//                            .build())
+//
+//                    .cacheNodeType("cache.m1.small")
+//                    .engine("memcached")
+//                    .engineVersion("1.4.5")
+//                    .cacheClusterStatus("available")
+//                    .numCacheNodes(3)
+//                            .build()
+//                , Location(Profile("test"), Region.US_WEST_1))
+//        )
+//
+//        on { checkResults} doReturn listOf(
+//                AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
+//        )
+//
+//        on { stacks } doReturn listOf(
+//                CFStack(Stack.builder()
+//                    .stackId("123stack")
+//                    .stackName("MyCFStack")
+//                    .stackStatus("CREATE_COMPLETE")
+//                    .build()
+//                , Location(Profile("test"), Region.US_WEST_1))
+//        )
+//
+//        on { updateTime } doReturn LocalDateTime.now()
+//
+//        on { inError } doReturn true
+//        on { errorMessage } doReturn "something went wrong"
 
     }
 

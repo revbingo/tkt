@@ -1,29 +1,28 @@
 package com.revbingo.aws
 
-import com.amazonaws.client.builder.AwsSyncClientBuilder
-import com.amazonaws.regions.Regions
-import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder
-import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest
-import com.amazonaws.services.ec2.AmazonEC2ClientBuilder
-import com.amazonaws.services.ec2.model.SpotInstanceStatus
-import com.amazonaws.services.elasticache.AmazonElastiCacheClientBuilder
-import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder
-import com.amazonaws.services.elasticloadbalancing.model.Listener
-import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
-import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription
-import com.amazonaws.services.elasticloadbalancingv2.model.DescribeListenersRequest
-import com.amazonaws.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest
-import com.amazonaws.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest
-import com.amazonaws.services.rds.AmazonRDSClientBuilder
-import com.amazonaws.services.route53.AmazonRoute53
-import com.amazonaws.services.route53.AmazonRoute53ClientBuilder
-import com.amazonaws.services.route53.model.HostedZone
-import com.amazonaws.services.route53.model.ListResourceRecordSetsRequest
-import com.amazonaws.services.route53.model.ListResourceRecordSetsResult
-import com.amazonaws.services.route53.model.ResourceRecordSet
-import com.amazonaws.services.support.AWSSupportClientBuilder
-import com.amazonaws.services.support.model.*
 import com.revbingo.web.logger
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
+import software.amazon.awssdk.services.ec2.Ec2Client
+import software.amazon.awssdk.services.elasticache.ElastiCacheClient
+import software.amazon.awssdk.services.elasticloadbalancing.ElasticLoadBalancingClient
+import software.amazon.awssdk.services.elasticloadbalancing.model.Listener
+import software.amazon.awssdk.services.elasticloadbalancing.model.ListenerDescription
+import software.amazon.awssdk.services.elasticloadbalancing.model.LoadBalancerDescription
+import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersRequest
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest
+import software.amazon.awssdk.services.rds.RdsClient
+import software.amazon.awssdk.services.route53.Route53Client
+import software.amazon.awssdk.services.route53.model.HostedZone
+import software.amazon.awssdk.services.route53.model.ListResourceRecordSetsRequest
+import software.amazon.awssdk.services.route53.model.ListResourceRecordSetsResponse
+import software.amazon.awssdk.services.route53.model.ResourceRecordSet
+import software.amazon.awssdk.services.support.SupportClient
+import software.amazon.awssdk.services.support.model.*
 
 interface Fetcher {
     fun getReservedInstances(): List<CountedReservation>
@@ -45,19 +44,19 @@ interface Fetcher {
 open class ClientGenerator(val accounts: Accounts) {
 
     @Suppress("UNCHECKED_CAST")
-    fun <T, C: Any> eachLocation(clientBuilder: AwsSyncClientBuilder<*,C>, callback: C.() -> List<T>): List<Pair<T, Location>> {
+    fun <T, C: Any> eachLocation(clientBuilder: AwsClientBuilder<*, C>, callback: C.() -> List<T>): List<Pair<T, Location>> {
         return accounts.eachRegion { location ->
-            val client = clientBuilder.withCredentials(location.profile.credentials)
-                    .withRegion(location.region).build() as C
+            val client = clientBuilder.credentialsProvider(location.profile.credentials)
+                    .region(location.region).build() as C
             logger.debug("${client.javaClass} - ${location.profile.name} (${location.region})")
             client.callback().map { Pair(it, location)}
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T, C: Any> eachAccount(clientBuilder: AwsSyncClientBuilder<*,C>, callback: C.(Profile) -> List<T>): List<T> {
+    fun <T, C: Any> eachAccount(clientBuilder: AwsClientBuilder<*,C>, callback: C.(Profile) -> List<T>): List<T> {
         return accounts.flatMap {
-            val client = clientBuilder.withCredentials(it.credentials).withRegion(Regions.US_EAST_1).build() as C
+            val client = clientBuilder.credentialsProvider(it.credentials).region(Region.US_EAST_1).build() as C
             logger.debug("${client.javaClass} - ${it.name}")
             client.callback(it)
         }
@@ -67,117 +66,124 @@ open class ClientGenerator(val accounts: Accounts) {
 class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
 
     override fun getReservedInstances(): List<CountedReservation> {
-        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
-            describeReservedInstances().reservedInstances
+        return clientGenerator.eachLocation(Ec2Client.builder()) {
+            describeReservedInstances().reservedInstances()
         }.map { (original, location) ->
             CountedReservation(original, location)
         }.filter { it.isActive }
     }
 
     override fun getSubnets(): List<VPCSubnet> {
-        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
-            describeSubnets().subnets
+        return clientGenerator.eachLocation(Ec2Client.builder()) {
+            describeSubnets().subnets()
         }.map { (original, location) ->
             VPCSubnet(original, location)
         }
     }
 
     override fun getInstances(): List<MatchedInstance> {
-        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
-            describeInstances().reservations.flatMap { it.instances }
+        return clientGenerator.eachLocation(Ec2Client.builder()) {
+            describeInstances().reservations().flatMap { it.instances() }
         }.map { (original, location) ->
             MatchedInstance(original, location)
         }
     }
 
     override fun getLoadBalancers(): List<InstancedLoadBalancer> {
-        return clientGenerator.eachLocation(AmazonElasticLoadBalancingClientBuilder.standard()) {
-            describeLoadBalancers().loadBalancerDescriptions
+        return clientGenerator.eachLocation(ElasticLoadBalancingClient.builder()) {
+            describeLoadBalancers().loadBalancerDescriptions()
         }.map { (original, location) ->
             InstancedLoadBalancer(original, location, "Classic")
         }
     }
 
     override fun getApplicationLoadBalancers(): List<InstancedLoadBalancer> {
-        val clientBuilder = com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder.standard()
+        val clientBuilder = ElasticLoadBalancingV2Client.builder()
         return clientGenerator.eachLocation(clientBuilder) {
-            describeLoadBalancers(DescribeLoadBalancersRequest()).loadBalancers.map {
+            describeLoadBalancers(DescribeLoadBalancersRequest.builder().build()).loadBalancers().map {
                 ApplicationLoadBalancer(it,
-                        describeListeners(DescribeListenersRequest().withLoadBalancerArn(it.loadBalancerArn)).listeners,
-                        describeTargetGroups(DescribeTargetGroupsRequest().withLoadBalancerArn(it.loadBalancerArn)).targetGroups)
+                    describeListeners(DescribeListenersRequest.builder().loadBalancerArn(it.loadBalancerArn()).build()).listeners(),
+                    describeTargetGroups(DescribeTargetGroupsRequest.builder()
+                                            .loadBalancerArn(it.loadBalancerArn())
+                                            .build()
+                                        ).targetGroups().map { tg -> TargetGroup(tg)})
             }
         }.map { (alb, location) ->
-            val mappedDescription = LoadBalancerDescription().apply {
-                setListenerDescriptions(alb.listeners.map { l ->
-                    ListenerDescription().apply {
-                        listener = Listener().apply {
-                            instancePort = 0
-                            instanceProtocol = l.protocol
-                            loadBalancerPort = l.port
-                        }
-                    }
-                })
-                loadBalancerName = alb.originalLoadBalancer.loadBalancerName
-                dnsName = alb.originalLoadBalancer.dnsName
-            }
+
+            val mappedDescription = LoadBalancerDescription.builder()
+                    .listenerDescriptions(
+                        alb.listeners.map { l: software.amazon.awssdk.services.elasticloadbalancingv2.model.Listener ->
+                            ListenerDescription.builder()
+                                .listener(Listener.builder()
+                                        .instancePort(0)
+                                        .protocol(l.protocol().name)
+                                        .loadBalancerPort(l.port())
+                                        .build()
+                                )
+                                .build()
+                    })
+                    .dnsName(alb.originalLoadBalancer.dnsName())
+                    .loadBalancerName(alb.originalLoadBalancer.loadBalancerName())
+                    .build()
+
             InstancedLoadBalancer(mappedDescription, location, "Application")
         }
     }
 
     override fun getDatabases(): List<RDSInstance> {
-        return clientGenerator.eachLocation(AmazonRDSClientBuilder.standard()) {
-            describeDBInstances().dbInstances
+        return clientGenerator.eachLocation(RdsClient.builder()) {
+            describeDBInstances().dbInstances()
         }.map { (original, location) ->
             RDSInstance(original, location)
         }
     }
 
     override fun getVolumes(): List<EBSVolume> {
-        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
-            describeVolumes().volumes
+        return clientGenerator.eachLocation(Ec2Client.builder()) {
+            describeVolumes().volumes()
         }.map { (original, location) ->
             EBSVolume(original, location)
         }
     }
 
     override fun getDomainNames(): List<DomainName> {
-        return clientGenerator.eachAccount(AmazonRoute53ClientBuilder.standard()) {
-            listHostedZones().hostedZones.flatMap { zone -> getRecordSets(zone) }
+        return clientGenerator.eachAccount(Route53Client.builder()) {
+            listHostedZones().hostedZones().flatMap { zone -> getRecordSets(zone) }
         }.filter {
-            it.type == "A" || it.type == "CNAME"
+            it.typeAsString() == "A" || it.typeAsString() == "CNAME"
         }.map(::DomainName)
     }
 
     override fun getCaches(): List<Cache> {
-        return clientGenerator.eachLocation(AmazonElastiCacheClientBuilder.standard()) {
-            describeCacheClusters().cacheClusters
+        return clientGenerator.eachLocation(ElastiCacheClient.builder()) {
+            describeCacheClusters().cacheClusters()
         }.map { (original, location) ->
             Cache(original, location)
         }
     }
 
     override fun getTrustedAdvisorChecks(): List<Check> {
-        return clientGenerator.eachAccount(AWSSupportClientBuilder.standard()) { (accountName, _) ->
+        return clientGenerator.eachAccount(SupportClient.builder()) { (accountName, _) ->
             try {
-                describeTrustedAdvisorChecks(DescribeTrustedAdvisorChecksRequest().withLanguage("en")).checks
-            } catch(e: AWSSupportException) {
+                describeTrustedAdvisorChecks(DescribeTrustedAdvisorChecksRequest.builder().language("en").build()).checks()
+            } catch(e: SupportException) {
                 logger.warn("Skipping ${accountName}, TrustedAdvisor only available for Premium Support accounts")
                 emptyList<TrustedAdvisorCheckDescription>()
             }
         }.distinct().map {
-            Check(it.id, it.name)
+            Check(it.id(), it.name())
         }
     }
 
     override fun getAdvisorResults(checks: List<Check>): List<AdvisorResult> {
-        return clientGenerator.eachAccount(AWSSupportClientBuilder.standard()) { (accountName, _) ->
+        return clientGenerator.eachAccount(SupportClient.builder()) { (accountName, _) ->
             try {
                 checks.map {
-                    Pair(it, describeTrustedAdvisorCheckResult(DescribeTrustedAdvisorCheckResultRequest().withCheckId(it.id)))
+                    Pair(it, describeTrustedAdvisorCheckResult(DescribeTrustedAdvisorCheckResultRequest.builder().checkId(it.id).build()))
                 }
-            } catch(e: AWSSupportException) {
+            } catch(e: SupportException) {
                 logger.warn("Skipping ${accountName}, TrustedAdvisor only available for Premium Support accounts")
-                emptyList<Pair<Check, DescribeTrustedAdvisorCheckResultResult>>()
+                emptyList<Pair<Check, DescribeTrustedAdvisorCheckResultResponse>>()
             }
         }.flatMap { (check, results) ->
             AdvisorResult.create(check, results)
@@ -186,16 +192,19 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
 
     override fun getCloudformationStacks(): List<CFStack> {
         try {
-            return clientGenerator.eachLocation(AmazonCloudFormationClientBuilder.standard()) {
-                describeStacks().stacks
+            return clientGenerator.eachLocation(CloudFormationClient.builder()) {
+                describeStacks().stacks()
             }.map { (stack, location) ->
                 CFStack(stack, location).apply {
                     retry(3) {
-                        logger.debug("Fetching resources for stack ${stack.stackName}")
-                        this.resourceIds = AmazonCloudFormationClientBuilder.standard().withCredentials(location.profile.credentials)
-                                .withRegion(location.region).build().describeStackResources(DescribeStackResourcesRequest()
-                                        .withStackName(stack.stackName)).stackResources.map { r ->
-                            CFResource(r.physicalResourceId, r.resourceType)
+                        logger.debug("Fetching resources for stack ${stack.stackName()}")
+                        this.resourceIds = CloudFormationClient.builder().credentialsProvider(location.profile.credentials)
+                                .region(location.region)
+                                .build()
+                                .describeStackResources(DescribeStackResourcesRequest.builder()
+                                        .stackName(stack.stackName())
+                                        .build()).stackResources().map { r ->
+                            CFResource(r.physicalResourceId(), r.resourceType())
                         }
                     }
                 }
@@ -206,18 +215,18 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
     }
 
     override fun getSpotInstanceRequests(): List<SpotRequest> {
-        return clientGenerator.eachLocation(AmazonEC2ClientBuilder.standard()) {
-            describeSpotInstanceRequests().spotInstanceRequests
+        return clientGenerator.eachLocation(Ec2Client.builder()) {
+            describeSpotInstanceRequests().spotInstanceRequests()
         }.map{ (spotRequest, location) ->
             SpotRequest(spotRequest)
         }
     }
 
     override fun getTargetGroups(): List<TargetGroup> {
-        var clientBuilder = com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder.standard()
+        var clientBuilder = ElasticLoadBalancingV2Client.builder()
         return clientGenerator.eachLocation(clientBuilder) {
-            val request = DescribeTargetGroupsRequest()
-            describeTargetGroups(request).targetGroups
+            val request = DescribeTargetGroupsRequest.builder().build()
+            describeTargetGroups(request).targetGroups()
         }.map {
             TargetGroup(it.first)
         }
@@ -241,19 +250,21 @@ class AWSFetcher(val clientGenerator: ClientGenerator): Fetcher {
 
 /* EXTENSIONS */
 
-private fun AmazonRoute53.getRecordSets(zone: HostedZone, previousResult: ListResourceRecordSetsResult? = null): Collection<ResourceRecordSet> {
+private fun Route53Client.getRecordSets(zone: HostedZone, previousResult: ListResourceRecordSetsResponse? = null): Collection<ResourceRecordSet> {
     if(previousResult != null && !previousResult.isTruncated()) return emptyList()
 
-    val results = this.listResourceRecordSets(previousResult.nextRequest(zone.id))
-    return results.resourceRecordSets.union(this.getRecordSets(zone, results))
+    val results = this.listResourceRecordSets(previousResult.nextRequest(zone.id()))
+    return results.resourceRecordSets().union(this.getRecordSets(zone, results))
 }
 
-private fun ListResourceRecordSetsResult?.nextRequest(zone: String): ListResourceRecordSetsRequest {
-    val request = ListResourceRecordSetsRequest(zone)
-    this ?: return request
+private fun ListResourceRecordSetsResponse?.nextRequest(zone: String): ListResourceRecordSetsRequest {
+    val request = ListResourceRecordSetsRequest.builder().hostedZoneId(zone)
+    this ?: return request.build()
 
-    return request.apply {
-        withStartRecordIdentifier(this@nextRequest.nextRecordIdentifier).withStartRecordName(this@nextRequest.nextRecordName).withStartRecordType(this@nextRequest.nextRecordType)
-    }
+    return request
+            .startRecordIdentifier(this@nextRequest.nextRecordIdentifier())
+            .startRecordName(this@nextRequest.nextRecordName())
+            .startRecordType(this@nextRequest.nextRecordType())
+            .build()
 }
 

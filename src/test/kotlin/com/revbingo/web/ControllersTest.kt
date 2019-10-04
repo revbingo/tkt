@@ -1,20 +1,23 @@
 package com.revbingo.web
 
-import com.amazonaws.services.ec2.model.Tag
-import com.amazonaws.services.elasticloadbalancing.model.Listener
-import com.amazonaws.services.elasticloadbalancing.model.ListenerDescription
-import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription
+
 import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isA
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+
 import com.revbingo.aws.*
 import com.revbingo.db.DatabaseAccessor
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ec2.model.Tag
+import software.amazon.awssdk.services.elasticloadbalancing.model.Listener
+import software.amazon.awssdk.services.elasticloadbalancing.model.ListenerDescription
+import software.amazon.awssdk.services.elasticloadbalancing.model.LoadBalancerDescription
 
 class ControllersTest: Spek({
 
@@ -36,11 +39,11 @@ class ControllersTest: Spek({
         it("only includes running servers") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "running1"))),
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "running2"))),
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "running3"))),
-                    matchedInstances(state = "stopped", tags = listOf(Tag("Name", "stopped1"))),
-                    matchedInstances(state = "stopped", tags = listOf(Tag("Name", "stopped2")))
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "running1"))),
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "running2"))),
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "running3"))),
+                    matchedInstances(state = "stopped", tags = listOf(tag("Name", "stopped1"))),
+                    matchedInstances(state = "stopped", tags = listOf(tag("Name", "stopped2")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -60,7 +63,7 @@ class ControllersTest: Spek({
         it("has ec2-user as the user if CloudFormation tag not present") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "running1")))
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "running1")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -75,7 +78,7 @@ class ControllersTest: Spek({
         it("does not have a User (i.e. uses AD user name) or IdentityFile if the server was created by CloudFormation") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "running1"), Tag("aws:cloudformation:stack-name", "stack")))
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "running1"), tag("aws:cloudformation:stack-name", "stack")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -92,8 +95,8 @@ class ControllersTest: Spek({
         it("uses public IP for the HostName if available, otherwise private ip") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "public1")), publicIpAddress = "1.2.3.4", privateIpAddress = "100.99.98.97"),
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "private1")), privateIpAddress = "100.99.98.97")
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "public1")), publicIpAddress = "1.2.3.4", privateIpAddress = "100.99.98.97"),
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "private1")), privateIpAddress = "100.99.98.97")
             ).flatten()
 
             val subject = APIController(repo)
@@ -109,7 +112,7 @@ class ControllersTest: Spek({
         it("has StrictHostKeyChecking turned off") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", tags = listOf(Tag("Name", "public1")))
+                    matchedInstances(state = "running", tags = listOf(tag("Name", "public1")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -123,8 +126,8 @@ class ControllersTest: Spek({
         it("does not include Windows hosts") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", platform = "Windows", tags = listOf(Tag("Name", "windows"))),
-                    matchedInstances(state = "running", platform = "Linux/Unix", tags = listOf(Tag("Name", "linux")))
+                    matchedInstances(state = "running", platform = "Windows", tags = listOf(tag("Name", "windows"))),
+                    matchedInstances(state = "running", platform = "Linux/Unix", tags = listOf(tag("Name", "linux")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -139,7 +142,7 @@ class ControllersTest: Spek({
         it("uses keyname for the IdentityFile") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", keyName = "myPrivateKey", tags = listOf(Tag("Name", "public")))
+                    matchedInstances(state = "running", keyName = "myPrivateKey", tags = listOf(tag("Name", "public")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -154,8 +157,8 @@ class ControllersTest: Spek({
         it("skips hosts that don't have a keyname") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(state = "running", keyName = null, tags = listOf(Tag("Name", "nokey"))),
-                    matchedInstances(state = "running", keyName = "akey", tags = listOf(Tag("Name", "akey")))
+                    matchedInstances(state = "running", keyName = null, tags = listOf(tag("Name", "nokey"))),
+                    matchedInstances(state = "running", keyName = "akey", tags = listOf(tag("Name", "akey")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -170,7 +173,7 @@ class ControllersTest: Spek({
         it("lowercases names") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(tags = listOf(Tag("Name", "UPPERCASE")))
+                    matchedInstances(tags = listOf(tag("Name", "UPPERCASE")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -185,7 +188,7 @@ class ControllersTest: Spek({
         it("replaces spaces with hyphens in the names") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(tags = listOf(Tag("Name", "A Server With Spaces")))
+                    matchedInstances(tags = listOf(tag("Name", "A Server With Spaces")))
             ).flatten()
 
             val subject = APIController(repo)
@@ -200,8 +203,8 @@ class ControllersTest: Spek({
         it("filters if an account is passed") {
             val repo = Repository(mock<Fetcher>(), mock<PricingProvider>(), mock<DatabaseAccessor>())
             repo.instances = listOf (
-                    matchedInstances(tags = listOf(Tag("Name", "devserver")), accountName = "Dev"),
-                    matchedInstances(tags = listOf(Tag("Name", "prodserver")), accountName = "Prod")
+                    matchedInstances(tags = listOf(tag("Name", "devserver")), accountName = "Dev"),
+                    matchedInstances(tags = listOf(tag("Name", "prodserver")), accountName = "Prod")
             ).flatten()
 
             val subject = APIController(repo)
@@ -217,24 +220,30 @@ class ControllersTest: Spek({
     describe("the load balancer listing") {
         val mockRepo = mock<Repository> {
             on { loadBalancers } doReturn listOf(
-                    InstancedLoadBalancer(LoadBalancerDescription().apply {
-                        loadBalancerName = "therightone"
-                        dnsName = "therightone.amazon.com"
-                        setListenerDescriptions(listOf(ListenerDescription().apply {
-                            listener = Listener("HTTP", 80, 8080)
-                        }, ListenerDescription().apply {
-                            listener = Listener("HTTPS", 443, 8443)
-                        }))
-                    }, Location(Profile("test"), "us-west-1"), "Classic").apply {
+                    InstancedLoadBalancer(LoadBalancerDescription.builder()
+                        .loadBalancerName("therightone")
+                        .dnsName("therightone.amazon.com")
+                        .listenerDescriptions(listOf(
+                                ListenerDescription.builder()
+                                    .listener(Listener.builder().protocol("HTTP").loadBalancerPort(80).instancePort(8080).build())
+                                    .build()
+                                ,
+                                ListenerDescription.builder()
+                                    .listener(Listener.builder().protocol("HTTPS").loadBalancerPort(443).instancePort(8443).build())
+                                    .build()
+                                )).build()
+                    , Location(Profile("test"), Region.US_WEST_1), "Classic").apply {
                         instances = listOf(matchedInstances(id = "instanceone", dnsName = "instanceone.wds.co" ), matchedInstances(id = "instancetwo", dnsName = "instancetwo.wds.co")).flatten().toMutableList()
                     },
-                    InstancedLoadBalancer(LoadBalancerDescription().apply {
-                        loadBalancerName = "thewrongone"
-                        dnsName = "thewrongone.amazon.com"
-                        setListenerDescriptions(listOf(ListenerDescription().apply {
-                            listener = Listener("HTTPS", 443, 8443)
-                        }))
-                    }, Location(Profile("test"), "us-west-1"), "Classic").apply {
+                    InstancedLoadBalancer(LoadBalancerDescription.builder()
+                            .loadBalancerName("thewrongone")
+                            .dnsName("thewrongone.amazon.com")
+                            .listenerDescriptions(listOf(ListenerDescription.builder()
+                                .listener(Listener.builder().protocol("HTTPS").loadBalancerPort(443).instancePort(8443).build())
+                                .build()
+                            ))
+                            .build()
+                    , Location(Profile("test"), Region.US_WEST_1), "Classic").apply {
                         instances = listOf(matchedInstances(id = "instancethree", dnsName = "instancethree.wds.co"), matchedInstances(id = "instancefour", dnsName = "instancefour.wds.co")).flatten().toMutableList()
                     }
             )
@@ -273,3 +282,5 @@ class ControllersTest: Spek({
         }
     }
 })
+
+fun tag(key: String, value: String): Tag = Tag.builder().key(key).value(value).build()

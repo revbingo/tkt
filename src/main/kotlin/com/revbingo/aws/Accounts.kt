@@ -1,24 +1,23 @@
 package com.revbingo.aws
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.AWSStaticCredentialsProvider
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.auth.BasicSessionCredentials
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
-import com.amazonaws.auth.profile.ProfilesConfigFile
-import com.amazonaws.regions.Regions
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
+import software.amazon.awssdk.profiles.ProfileFile
+import software.amazon.awssdk.regions.Region
+import java.nio.file.Path
+import java.nio.file.Paths
 
-data class Profile(val name: String, val credentials: AWSCredentialsProvider? = null)
-data class Location(val profile: Profile, val region: String)
+data class Profile(val name: String, val credentials: AwsCredentialsProvider? = null)
+data class Location(val profile: Profile, val region: Region)
 
 interface Accounts: Iterable<Profile> {
-    val creds: Map<String, AWSCredentialsProvider>
-    val regions: List<Regions>
+    val creds: Map<String, AwsCredentialsProvider>
+    val regions: List<Region>
 
     fun <T> eachRegion(callback: (Location) -> List<T>): List<T> {
         return this.flatMap { profile ->
             regions.map { region ->
-                callback(Location(profile, region.getName()))
+                callback(Location(profile, region))
             }
         }.flatten()
     }
@@ -28,14 +27,20 @@ interface Accounts: Iterable<Profile> {
 
 class AWSProfiles(filePath: String) : Accounts {
 
-    override val creds = mutableMapOf<String, AWSCredentialsProvider>()
+    override val creds = mutableMapOf<String, AwsCredentialsProvider>()
 
     init {
         val normalisedPath = filePath.replaceFirst("~", "/${System.getProperty("user.home")}")
-        ProfilesConfigFile(normalisedPath).allBasicProfiles.mapValuesTo(creds) { ProfileCredentialsProvider(normalisedPath, it.key) }
+        ProfileFile.builder()
+                .content(Paths.get(normalisedPath))
+            .build()
+            .profiles()
+            .mapValuesTo(creds) {
+                ProfileCredentialsProvider.builder().profileName(it.key).build()
+            }
     }
 
-    override val regions = listOf(Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2,  Regions.US_EAST_2,
-                                    Regions.EU_WEST_1, Regions.EU_WEST_2, Regions.EU_CENTRAL_1,
-                                    Regions.AP_SOUTHEAST_1, Regions.AP_SOUTHEAST_2)
+    override val regions = listOf(Region.US_EAST_1, Region.US_WEST_1, Region.US_WEST_2,  Region.US_EAST_2,
+                                    Region.EU_WEST_1, Region.EU_WEST_2, Region.EU_CENTRAL_1,
+                                    Region.AP_SOUTHEAST_1, Region.AP_SOUTHEAST_2)
 }

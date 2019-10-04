@@ -5,13 +5,14 @@ import com.natpryce.hamkrest.equalTo
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.subject.SubjectSpek
+import software.amazon.awssdk.regions.Region
 import java.io.File
 
 class PricingProviderTest: SubjectSpek<PricingProvider>({
 
     subject { EC2InstancesDotInfoPricingProvider(File("test-data/instances.json")) }
 
-    val testAccount = Location(Profile("test"), "eu-west-1")
+    val testAccount = Location(Profile("test"), Region.EU_WEST_1)
     
     describe("the pricing provider") {
         it("depends on instance type") {

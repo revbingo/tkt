@@ -114,7 +114,7 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
     private fun applyPricing() {
         instances.forEach {
             it.price =  when {
-                it.isSpotInstance() -> allResources[it.originalInstance.spotInstanceRequestId]?.price ?: 0.0f
+                it.isSpotInstance() -> allResources[it.originalInstance.spotInstanceRequestId()]?.price ?: 0.0f
                 else -> pricingProvider.getPriceFor(it)
             }
         }
@@ -126,11 +126,11 @@ open class Repository(val fetcher: Fetcher, val pricingProvider: PricingProvider
 
     private fun updateInstancesInLoadBalancers() {
         loadBalancers.forEach { lb ->
-            lb.instances = lb.originalLoadBalancer.instances.map { instanceIdMap[it.instanceId] }.filterNotNull()
+            lb.instances = lb.originalLoadBalancer.instances().map { instanceIdMap[it.instanceId()] }.filterNotNull()
         }
 
         targetGroups.forEach { tg ->
-            tg.originalInstance.loadBalancerArns
+            tg.originalInstance.loadBalancerArns()
         }
     }
 

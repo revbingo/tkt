@@ -1,6 +1,7 @@
 package com.revbingo.aws
 
-import com.amazonaws.services.ec2.model.*
+import software.amazon.awssdk.services.ec2.model.*
+import java.time.Instant
 import java.util.*
 
 fun List<MatchedInstance>.matching() = this.filter { it.matched }
@@ -8,42 +9,43 @@ fun List<MatchedInstance>.matching() = this.filter { it.matched }
 fun reservedInstance(count: Int = 1, az: String = "us-east-1a", type: String = "m3.large",
                      regionScope: Boolean = false, state: String = "active",
                      product: String = "Linux/UNIX", id: String = Random().nextInt().toString()): ReservedInstances {
-    val ri = ReservedInstances()
-    ri.instanceCount = count
-    if(regionScope) {
-        ri.scope = "Region"
-    } else {
-        ri.availabilityZone = az
-    }
-    ri.instanceType = type
-    ri.state = state
-    ri.productDescription = product
-    ri.reservedInstancesId = id
+    val ri = ReservedInstances.builder()
+        .instanceCount(count)
+        .instanceType(type)
+        .state(state)
+        .productDescription(product)
+        .reservedInstancesId(id)
 
-    return ri
+    if(regionScope) {
+        ri.scope("Region")
+    } else {
+        ri.availabilityZone(az)
+    }
+
+    return ri.build()
 }
 
 fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String = "running",
              id: String = "noid", platform: String = "", vpcId: String? = null, subnetId: String? = null,
              dnsName: String? = null, tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
-            privateIpAddress: String? = null, keyName: String? = "key") : Instance {
+            privateIpAddress: String? = null, keyName: String? = "key", launchTime: Instant = Instant.now()) : Instance {
 
-    val instance = Instance()
-    instance.instanceType = type
-    instance.instanceId = id
-    instance.state = InstanceState().withName(state)
-    instance.placement = Placement().withAvailabilityZone(az)
-    instance.platform = platform
-    instance.vpcId = vpcId
-    instance.subnetId = subnetId
-    instance.launchTime = Date()
-    instance.publicDnsName = dnsName
-    instance.setTags(tags)
-    instance.publicIpAddress = publicIpAddress
-    instance.privateIpAddress = privateIpAddress
-    instance.keyName = keyName
+    val instance = Instance.builder()
+        .instanceType(type)
+        .instanceId(id)
+        .state(InstanceState.builder().name(state).build())
+        .placement(Placement.builder().availabilityZone(az).build())
+        .platform(platform)
+        .vpcId(vpcId)
+        .subnetId(subnetId)
+        .launchTime(launchTime)
+        .publicDnsName(dnsName)
+        instance.tags(tags)
+        .publicIpAddress(publicIpAddress)
+        .privateIpAddress(privateIpAddress)
+        .keyName(keyName)
 
-    return instance
+    return instance.build()
 }
 
 fun countedReservations(count: Int = 1, az: String = "", type: String = "t2.large",
@@ -51,7 +53,7 @@ fun countedReservations(count: Int = 1, az: String = "", type: String = "t2.larg
                         product: String = "Linux/UNIX", unmatchedCount: Int = count): List<CountedReservation> {
     val ri = reservedInstance(count, az, type, regionScope, state, product)
 
-    return listOf(CountedReservation(ri, Location(Profile("Test"), region), unmatchedCount))
+    return listOf(CountedReservation(ri, Location(Profile("Test"), software.amazon.awssdk.regions.Region.of(region)), unmatchedCount))
 }
 
 fun matchedInstances(count: Int = 1, az: String = "", type: String = "t2.large", state: String = "running",
@@ -64,7 +66,7 @@ fun matchedInstances(count: Int = 1, az: String = "", type: String = "t2.large",
         val instance = instance(az, type, state, id, platform, vpcId, subnet?.id ?: subnetId, dnsName, tags, publicIpAddress, privateIpAddress, keyName)
         instances.add(instance)
     }
-    return instances.map { MatchedInstance(it, Location(Profile(accountName), az.dropLast(1))).apply {
+    return instances.map { MatchedInstance(it, Location(Profile(accountName), software.amazon.awssdk.regions.Region.of(az.dropLast(1)))).apply {
         this.subnet = subnet
     } }
 }

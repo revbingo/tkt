@@ -136,7 +136,7 @@ class ReservationMatcherTest : Spek( {
             )
 
             assertThat(matchedInstances.matching().count(), equalTo(1))
-            assertThat(matchedInstances.matching()[0].originalInstance.instanceId, equalTo("theLinuxInstance"))
+            assertThat(matchedInstances.matching()[0].originalInstance.instanceId(), equalTo("theLinuxInstance"))
         }
 
         it("consumes compute units if region scope and same family") {

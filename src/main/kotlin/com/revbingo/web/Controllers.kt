@@ -43,7 +43,7 @@ class APIController(private val repository: Repository) {
         return repository.validSshInstances(accountName).render { instance ->
             val ipAddress = instance.publicIpAddress ?: instance.privateIpAddress
             val id = instance.name?.toLowerCase()?.replace(" ", "-")
-            val keyFile = "~/.ssh/${instance.originalInstance.keyName}.pem"
+            val keyFile = "~/.ssh/${instance.originalInstance.keyName()}.pem"
 
             var configEntry = """
             |Host ${id}
@@ -76,7 +76,7 @@ class APIController(private val repository: Repository) {
 
     private fun Repository.validSshInstances(accountName: String? = null): List<MatchedInstance> =
             this.instances.filter {  it.inAccount(accountName) && it.isRunning
-                                        && it.platform != "Windows" && it.originalInstance.keyName != null }
+                                        && it.platform != "Windows" && it.originalInstance.keyName() != null }
 
     fun MatchedInstance.inAccount(accountName: String? = null) = (accountName == null || this.location.profile.name == accountName)
 }

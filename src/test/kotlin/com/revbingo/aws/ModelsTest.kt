@@ -1,12 +1,5 @@
 package com.revbingo.aws
 
-import com.amazonaws.services.ec2.model.*
-import com.amazonaws.services.elasticache.model.CacheCluster
-import com.amazonaws.services.rds.model.DBInstance
-import com.amazonaws.services.rds.model.Endpoint
-import com.amazonaws.services.support.model.DescribeTrustedAdvisorCheckResultResult
-import com.amazonaws.services.support.model.TrustedAdvisorCheckResult
-import com.amazonaws.services.support.model.TrustedAdvisorResourceDetail
 import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
@@ -14,19 +7,29 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.xit
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ec2.model.*
+import software.amazon.awssdk.services.elasticache.model.CacheCluster
+import software.amazon.awssdk.services.rds.model.DBInstance
+import software.amazon.awssdk.services.rds.model.Endpoint
+import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultResponse
+import software.amazon.awssdk.services.support.model.TrustedAdvisorCheckResult
+import software.amazon.awssdk.services.support.model.TrustedAdvisorResourceDetail
 import java.util.*
 import kotlin.text.isNullOrBlank
 
 class ModelsTest : Spek({
 
-    val testAccount = Location(Profile("Test"), "eu-west-1")
+    val testAccount = Location(Profile("Test"), Region.EU_WEST_1)
     
     describe("A CountedReservation") {
         it("delegates some properties to the original") {
-            val original = reservedInstance(state = "active", az = "us-west-1a", count = 10, type = "m3.large")
-            original.scope = "scope"
-            original.end = Date(12345L)
-            original.reservedInstancesId = "theId"
+            var original = reservedInstance(state = "active", az = "us-west-1a", count = 10, type = "m3.large")
+            original = original.toBuilder()
+                    .scope("scope")
+                    .end(Date(12345L).toInstant())
+                    .reservedInstancesId("theId")
+                    .build()
             val unit = CountedReservation(original, testAccount)
 
             assertThat(unit.state, equalTo("active"))
@@ -73,21 +76,6 @@ class ModelsTest : Spek({
             assertThat(unit.computeUnits, equalTo(16f))
         }
 
-        it("is immutable, even if underlying instance is changed") {
-            val original = reservedInstance(state = "active", az = "us-west-1a", count = 10, type = "m3.large")
-
-            val unit = CountedReservation(original, testAccount)
-
-            assertThat(unit.state, equalTo("active"))
-            assertThat(unit.instanceCount, equalTo(10))
-
-            original.state = "retired"
-            original.instanceCount = 99
-
-            assertThat(unit.state, equalTo("active"))
-            assertThat(unit.instanceCount, equalTo(10))
-        }
-
         it("is marked as active if the state is active") {
             val original = reservedInstance(state = "active")
 
@@ -124,7 +112,7 @@ class ModelsTest : Spek({
 
             val unit = MatchedInstance(original, testAccount)
 
-            assertThat(unit.state, equalTo(InstanceState().withName("running")))
+            assertThat(unit.state, equalTo(InstanceState.builder().name("running").build()))
             assertThat(unit.availabilityZone, equalTo("us-west-1b"))
             assertThat(unit.instanceType, equalTo("m3.large"))
             assertThat(unit.family, equalTo("m3"))
@@ -178,8 +166,7 @@ class ModelsTest : Spek({
 
         it("formats launchDate as ISO_DATE") {
             //this is probably a flaky test if you're not GMT
-            val original = instance()
-            original.launchTime = Date(1234567890123L)
+            val original = instance(launchTime = Date(1234567890123L).toInstant())
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -187,8 +174,7 @@ class ModelsTest : Spek({
         }
 
         it("strips DNS name down to just IP part") {
-            val original = instance()
-            original.publicDnsName = "ec2-12-34-56-78.compute-1.amazonaws.com"
+            val original = instance(dnsName = "ec2-12-34-56-78.compute-1.amazonaws.com")
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -196,8 +182,7 @@ class ModelsTest : Spek({
         }
 
         it("gets name from the Name tag") {
-            val original = instance()
-            original.withTags(Tag("Name", "bob"))
+            val original = instance(tags = listOf(Tag.builder().key("Name").value("bob").build()))
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -205,8 +190,7 @@ class ModelsTest : Spek({
         }
 
         it("gets client from the Client tag") {
-            val original = instance()
-            original.withTags(Tag("Client", "customer"))
+            val original = instance(tags = listOf(Tag.builder().key("Client").value("customer").build()))
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -214,8 +198,7 @@ class ModelsTest : Spek({
         }
 
         it("gets capability from the Capability tag") {
-            val original = instance()
-            original.withTags(Tag("Capability", "Brown"))
+            val original = instance(tags = listOf(Tag.builder().key("Capability").value("Brown").build()))
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -223,8 +206,7 @@ class ModelsTest : Spek({
         }
 
         it("gets environment from the Environment tag") {
-            val original = instance()
-            original.withTags(Tag("Environment", "prod"))
+            val original = instance(tags = listOf(Tag.builder().key("Environment").value("prod").build()))
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -232,7 +214,10 @@ class ModelsTest : Spek({
         }
 
         it("can get an arbitrary tag") {
-            val original = instance(tags = listOf(Tag("One", "1"), Tag("Two", "2")))
+            val original = instance(tags = listOf(
+                                                Tag.builder().key("One").value("1").build(),
+                                                Tag.builder().key("Two").value("2").build())
+                                            )
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -241,8 +226,8 @@ class ModelsTest : Spek({
         }
 
         it("doesn't blow up if tags are not present") {
-            val original = instance()
-            original.withTags(Tag("AnotherTag", "SomethingElse"))
+            var original = instance()
+            original = original.toBuilder().tags(Tag.builder().key("AnotherTag").value("SomethingElse").build()).build()
 
             val unit = MatchedInstance(original, testAccount)
 
@@ -261,10 +246,10 @@ class ModelsTest : Spek({
         }
 
         it("matches availability zone if regionScope is set and the region is the same") {
-            val reservation = CountedReservation(reservedInstance(regionScope = true), Location(Profile(""), "us-west-1"))
-            val instanceB = MatchedInstance(instance(az = "us-west-1b"), Location(Profile(""), "us-west-1"))
-            val instanceD = MatchedInstance(instance(az = "us-west-1d"), Location(Profile(""), "us-west-1"))
-            val instanceEU = MatchedInstance(instance(az = "eu-west-1d"), Location(Profile(""), "eu-west-1d"))
+            val reservation = CountedReservation(reservedInstance(regionScope = true), Location(Profile(""), Region.US_WEST_1))
+            val instanceB = MatchedInstance(instance(az = "us-west-1b"), Location(Profile(""), Region.US_WEST_1))
+            val instanceD = MatchedInstance(instance(az = "us-west-1d"), Location(Profile(""), Region.US_WEST_1))
+            val instanceEU = MatchedInstance(instance(az = "eu-west-1d"), Location(Profile(""), Region.EU_WEST_1))
 
             assertThat(instanceB.sameZoneAs(reservation), equalTo(true))
             assertThat(instanceD.sameZoneAs(reservation), equalTo(true))
@@ -342,21 +327,22 @@ class ModelsTest : Spek({
 
     describe("An RDS instance") {
         it("delegates properties to the original") {
-            val originalInstance = DBInstance().apply {
-                dbInstanceIdentifier = "myDatabase"
-                dbInstanceClass = "db.t2.small"
-                engine = "MySQL"
-                engineVersion = "5.7.3"
-                multiAZ = false
-                allocatedStorage = 50
-                availabilityZone = "us-west-1b"
-                endpoint = Endpoint().apply {
-                    address = "myDatabase.cdcdqwde.compute.amazonaws.com"
-                    port = 3306
-                }
-            }
+            val originalInstance = DBInstance.builder()
+                    .dbInstanceIdentifier("myDatabase")
+                    .dbInstanceClass("db.t2.small")
+                    .engine("MySQL")
+                    .engineVersion("5.7.3")
+                    .multiAZ(false)
+                    .allocatedStorage(50)
+                    .availabilityZone("us-west-1b")
+                    .endpoint(Endpoint.builder()
+                            .address("myDatabase.cdcdqwde.compute.amazonaws.com")
+                            .port(3306)
+                            .build()
+                    )
+                    .build()
 
-            val subject = RDSInstance(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = RDSInstance(originalInstance, Location(Profile("test"), Region.US_WEST_1))
 
             assertThat(subject.name, equalTo("myDatabase"))
             assertThat(subject.type, equalTo("db.t2.small"))
@@ -369,55 +355,56 @@ class ModelsTest : Spek({
         }
 
         it("has an id that is the name") {
-            val originalInstance = DBInstance().apply {
-                dbInstanceIdentifier = "myDatabase"
-                dbInstanceClass = "db.t2.small"
-                engine = "MySQL"
-                engineVersion = "5.7.3"
-                multiAZ = false
-                allocatedStorage = 50
-                availabilityZone = "us-west-1b"
-                endpoint = Endpoint().apply {
-                    address = "myDatabase.cdcdqwde.compute.amazonaws.com"
-                    port = 3306
-                }
-            }
+            val originalInstance = DBInstance.builder()
+                    .dbInstanceIdentifier("myDatabase")
+                    .dbInstanceClass("db.t2.small")
+                    .engine("MySQL")
+                    .engineVersion("5.7.3")
+                    .multiAZ(false)
+                    .allocatedStorage(50)
+                    .availabilityZone("us-west-1b")
+                    .endpoint(Endpoint.builder()
+                        .address("myDatabase.cdcdqwde.compute.amazonaws.com")
+                        .port(3306)
+                        .build()
+                    )
+                    .build()
 
-            val subject = RDSInstance(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = RDSInstance(originalInstance, Location(Profile("test"), Region.US_WEST_1))
 
             assertThat(subject.id, equalTo(subject.name))
         }
 
         it("doesn't need an endpoint if the instance is starting") {
-            val originalInstance = DBInstance().apply {
-                dbInstanceIdentifier = "myDatabase"
-                dbInstanceClass = "db.t2.small"
-                engine = "MySQL"
-                engineVersion = "5.7.3"
-                multiAZ = false
-                allocatedStorage = 50
-                availabilityZone = "us-west-1b"
-            }
+            val originalInstance = DBInstance.builder()
+                    .dbInstanceIdentifier("myDatabase")
+                    .dbInstanceClass("db.t2.small")
+                    .engine("MySQL")
+                    .engineVersion("5.7.3")
+                    .multiAZ(false)
+                    .allocatedStorage(50)
+                    .availabilityZone("us-west-1b")
+                    .build()
 
-            val subject = RDSInstance(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = RDSInstance(originalInstance, Location(Profile("test"), Region.US_WEST_1))
             assertThat(subject.endpoint, equalTo(""))
         }
     }
 
     describe("an EBS volume") {
         it("delegates properties to the original") {
-            val originalInstance = Volume().apply {
-                volumeType = "standard"
-                volumeId = "1234abc"
-                size = 50
-                iops = 30
-                encrypted = false
-                state = "in-use"
-                setAttachments(listOf(VolumeAttachment().apply { instanceId = "77777"}))
-                setTags(listOf(Tag("Name", "aVolume")))
-            }
+            val originalInstance = Volume.builder()
+                    .volumeType("standard")
+                    .volumeId("1234abc")
+                    .size(50)
+                    .iops(30)
+                    .encrypted(false)
+                    .state("in-use")
+                    .attachments(listOf(VolumeAttachment.builder().instanceId("77777").build()))
+                    .tags(listOf(Tag.builder().key("Name").value("aVolume").build()))
+                    .build()
 
-            val subject = EBSVolume(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = EBSVolume(originalInstance, Location(Profile("test"), Region.US_WEST_1))
 
             assertThat(subject.name, equalTo("aVolume"))
             assertThat(subject.type, equalTo("standard"))
@@ -430,51 +417,52 @@ class ModelsTest : Spek({
         }
 
         it("doesn't blow up if Name tag not present") {
-            val originalInstance = Volume().apply {
-                volumeType = "standard"
-                volumeId = "1234abc"
-                size = 50
-                iops = 30
-                encrypted = false
-                state = "in-use"
-                setAttachments(listOf(VolumeAttachment().apply { instanceId = "77777"}))
-            }
+            val originalInstance = Volume.builder()
+                    .volumeType("standard")
+                    .volumeId("1234abc")
+                    .size(50)
+                    .iops(30)
+                    .encrypted(false)
+                    .state("in-use")
+                    .attachments(listOf(VolumeAttachment.builder().instanceId("77777").build()))
+                    .build()
 
-            val subject = EBSVolume(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = EBSVolume(originalInstance, Location(Profile("test"), Region.US_WEST_1))
             assertThat(subject.name, absent())
         }
 
         it("doesn't blow up if instances not attached") {
-            val originalInstance = Volume().apply {
-                volumeType = "standard"
-                volumeId = "1234abc"
-                size = 50
-                iops = 30
-                encrypted = false
-                state = "in-use"
-            }
+            val originalInstance = Volume.builder()
+                    .volumeType("standard")
+                    .volumeId("1234abc")
+                    .size(50)
+                    .iops(30)
+                    .encrypted(false)
+                    .state("in-use")
+                    .build()
 
-            val subject = EBSVolume(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = EBSVolume(originalInstance, Location(Profile("test"), Region.US_WEST_1))
             assertThat(subject.attachedInstanceIds, equalTo(emptyList()))
         }
     }
 
     describe("A cache") {
         it("delegates properties to the original") {
-            val originalInstance = CacheCluster().apply {
-                this.cacheClusterId = "clusterId"
-                this.configurationEndpoint = com.amazonaws.services.elasticache.model.Endpoint().apply {
-                    address = "mycache.amazon.com"
-                    port = 11211
-                }
-                this.cacheNodeType = "cache.m1.small"
-                this.engine = "memcached"
-                this.engineVersion = "1.4.5"
-                this.cacheClusterStatus = "available"
-                this.numCacheNodes = 3
-            }
+            val originalInstance = CacheCluster.builder()
+                .cacheClusterId("clusterId")
+                .configurationEndpoint(software.amazon.awssdk.services.elasticache.model.Endpoint.builder()
+                    .address("mycache.amazon.com")
+                    .port(11211)
+                    .build()
+                )
+                .cacheNodeType("cache.m1.small")
+                .engine("memcached")
+                .engineVersion("1.4.5")
+                .cacheClusterStatus("available")
+                .numCacheNodes(3)
+                .build()
 
-            val subject = Cache(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = Cache(originalInstance, Location(Profile("test"), Region.US_WEST_1))
 
             assertThat(subject.id, equalTo("clusterId"))
             assertThat(subject.endpoint, equalTo("mycache.amazon.com:11211"))
@@ -488,16 +476,16 @@ class ModelsTest : Spek({
 
     describe("A subnet") {
         it("gets name from the tags") {
-            val originalInstance = Subnet().apply {
-                this.subnetId = "subnet-abcd"
-                this.vpcId = "vpc-123"
-                setTags(listOf(Tag("Name", "mySubnet")))
-                this.cidrBlock = "1.2.3.4/5"
-                this.availabilityZone = "us-west-1a"
-                this.defaultForAz = false
-            }
+            val originalInstance = Subnet.builder()
+                .subnetId("subnet-abcd")
+                .vpcId("vpc-123")
+                .tags(listOf(Tag.builder().key("Name").value("mySubnet").build()))
+                .cidrBlock("1.2.3.4/5")
+                .availabilityZone("us-west-1a")
+                .defaultForAz(false)
+                .build()
 
-            val subject = VPCSubnet(originalInstance, Location(Profile("test"), "us-west-1"))
+            val subject = VPCSubnet(originalInstance, Location(Profile("test"), Region.US_WEST_1))
 
             assertThat(subject.name, equalTo("mySubnet"))
         }
@@ -505,11 +493,11 @@ class ModelsTest : Spek({
 
     describe("a spot request") {
         it("gets id and from the spot request") {
-            val originalInstance = SpotInstanceRequest().apply {
-                this.spotInstanceRequestId = "instance-request"
-                this.spotPrice = "0.01"
-                this.actualBlockHourlyPrice = "0.002"
-            }
+            val originalInstance = SpotInstanceRequest.builder()
+                .spotInstanceRequestId("instance-request")
+                .spotPrice("0.01")
+                .actualBlockHourlyPrice("0.002")
+                .build()
 
             val subject = SpotRequest(originalInstance)
 
@@ -518,10 +506,10 @@ class ModelsTest : Spek({
         }
 
         it("gets price as the spotPrice if hourly is not available") {
-            val originalInstance = SpotInstanceRequest().apply {
-                this.spotInstanceRequestId = "instance-request"
-                this.spotPrice = "0.01"
-            }
+            val originalInstance = SpotInstanceRequest.builder()
+                    .spotInstanceRequestId("instance-request")
+                    .spotPrice("0.01")
+                    .build()
 
             val subject = SpotRequest(originalInstance)
 
@@ -734,17 +722,17 @@ fun check(name: String): Check {
     return Check("id", name)
 }
 
-fun result(metaAsString: String): DescribeTrustedAdvisorCheckResultResult {
+fun result(metaAsString: String): DescribeTrustedAdvisorCheckResultResponse {
     val meta = parseMeta(metaAsString)
-    return DescribeTrustedAdvisorCheckResultResult().apply {
-        result = TrustedAdvisorCheckResult().apply {
-            this.setFlaggedResources(listOf(
-                    TrustedAdvisorResourceDetail().apply {
-                        setMetadata(meta)
-                    }
-            ))
-        }
-    }
+    return DescribeTrustedAdvisorCheckResultResponse.builder()
+            .result(TrustedAdvisorCheckResult.builder()
+                    .flaggedResources(listOf(
+                            TrustedAdvisorResourceDetail.builder()
+                                    .metadata(meta)
+                                    .build())
+                    )
+                    .build())
+            .build()
 }
 
 fun parseMeta(metaAsString: String): List<String?> {
