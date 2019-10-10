@@ -31,12 +31,14 @@ class AWSProfiles(filePath: String) : Accounts {
 
     init {
         val normalisedPath = filePath.replaceFirst("~", "/${System.getProperty("user.home")}")
-        ProfileFile.builder()
+        var profileFile =  ProfileFile.builder()
                 .content(Paths.get(normalisedPath))
-            .build()
-            .profiles()
+                .type(ProfileFile.Type.CREDENTIALS)
+                .build()
+
+        profileFile.profiles()
             .mapValuesTo(creds) {
-                ProfileCredentialsProvider.builder().profileName(it.key).build()
+                ProfileCredentialsProvider.builder().profileFile(profileFile).profileName(it.key).build()
             }
     }
 
