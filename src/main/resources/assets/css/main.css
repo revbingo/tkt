@@ -181,3 +181,23 @@ input,select {
 span.stopped {
     color: #aaaaaa;
 }
+
+button.dt-button {
+    background-image: none;
+    background-color: #ff8200;
+    border: none;
+    color: white;
+    padding: 0.25em
+}
+
+button.dt-button:hover:not(.disabled) {
+    background-image: none;
+    background-color: #ffac33;
+    border: none;
+    color: white;
+    padding: 0.25em
+}
+
+#data-table_wrapper {
+    margin-top: 20px;
+}

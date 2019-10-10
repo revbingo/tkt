@@ -8,7 +8,10 @@ $(function() {
 
     var table = $("#data-table").DataTable( {
         paging: false,
-        dom: 'rit',
+        dom: 'Brit',
+        buttons: [
+            'copy', 'csv'
+        ],
         initComplete: function () {
             this.api().columns().every( function () {
                 var column = this;
