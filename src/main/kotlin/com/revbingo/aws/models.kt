@@ -22,6 +22,8 @@ fun computeUnitsFor(instanceSize: String) = when(instanceSize) {
     "large" -> 4f
     "xlarge" -> 8f
     "2xlarge" -> 16f
+    "4xlarge" -> 32f
+    "8xlarge" -> 64f
     else -> 0f
 }
 

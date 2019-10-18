@@ -8,13 +8,15 @@ fun List<MatchedInstance>.matching() = this.filter { it.matched }
 
 fun reservedInstance(count: Int = 1, az: String = "us-east-1a", type: String = "m3.large",
                      regionScope: Boolean = false, state: String = "active",
-                     product: String = "Linux/UNIX", id: String = Random().nextInt().toString()): ReservedInstances {
+                     product: String = "Linux/UNIX", id: String = Random().nextInt().toString(),
+                     endDate: Instant = Instant.now().plusSeconds(86400)): ReservedInstances {
     val ri = ReservedInstances.builder()
         .instanceCount(count)
         .instanceType(type)
         .state(state)
         .productDescription(product)
         .reservedInstancesId(id)
+        .end(endDate)
 
     if(regionScope) {
         ri.scope("Region")
@@ -25,7 +27,7 @@ fun reservedInstance(count: Int = 1, az: String = "us-east-1a", type: String = "
     return ri.build()
 }
 
-fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String = "running",
+fun instance(az: String = "eu-west-1a", type: String = "m3.large", state: String = "running",
              id: String = "noid", platform: String = "", vpcId: String? = null, subnetId: String? = null,
              dnsName: String? = null, tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
             privateIpAddress: String? = null, keyName: String? = "key", launchTime: Instant = Instant.now()) : Instance {
@@ -40,7 +42,7 @@ fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String
         .subnetId(subnetId)
         .launchTime(launchTime)
         .publicDnsName(dnsName)
-        instance.tags(tags)
+        .tags(tags)
         .publicIpAddress(publicIpAddress)
         .privateIpAddress(privateIpAddress)
         .keyName(keyName)
@@ -49,14 +51,14 @@ fun instance(az: String = "us-east-1a", type: String = "m3.large", state: String
 }
 
 fun countedReservations(count: Int = 1, az: String = "", type: String = "t2.large",
-                      regionScope: Boolean = false, region: String = "", state: String = "active",
+                      regionScope: Boolean = false, region: String = "eu-west-1", state: String = "active",
                         product: String = "Linux/UNIX", unmatchedCount: Int = count): List<CountedReservation> {
     val ri = reservedInstance(count, az, type, regionScope, state, product)
 
     return listOf(CountedReservation(ri, Location(Profile("Test"), software.amazon.awssdk.regions.Region.of(region)), unmatchedCount))
 }
 
-fun matchedInstances(count: Int = 1, az: String = "", type: String = "t2.large", state: String = "running",
+fun matchedInstances(count: Int = 1, az: String = "eu-west-1a", type: String = "t2.large", state: String = "running",
               id: String = "noid", platform: String = "", vpcId: String? = null, subnetId: String? = null, subnet: VPCSubnet? = null, dnsName: String? = null,
                      tags: List<Tag> = emptyList(), publicIpAddress: String? = null,
                      privateIpAddress: String? = null, keyName: String? = "key", accountName: String = "test") : List<MatchedInstance> {

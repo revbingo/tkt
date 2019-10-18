@@ -142,7 +142,7 @@ class ReservationMatcherTest : Spek( {
         it("consumes compute units if region scope and same family") {
             val matchedInstances = match(
                     listOf(
-                            countedReservations(count = 2, az = "us-west-1a", type = "t2.medium", product = "Linux/UNIX", regionScope = true)
+                            countedReservations(count = 2, region = "us-west-1", type = "t2.medium", product = "Linux/UNIX", regionScope = true)
                     ),
                     listOf(
                             matchedInstances(count = 1, az = "us-west-1a", type = "t2.small", state = "running", id = "aLinuxInstance"),

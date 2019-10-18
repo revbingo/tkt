@@ -43,127 +43,124 @@ class UITests : SubjectSpek<Application>({
     val mockRepo: Repository = mock {
 
 
-//        on { subnets } doReturn listOf(
-//               theSubnet
-//        )
+        on { subnets } doReturn listOf(
+               theSubnet
+        )
 
-//        whenever(it.toString()).thenReturn("hi!")
-        on { toString() } doReturn "hi!"
+        on { instances } doReturn listOf(
+                matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
+                        id = "abc1", vpcId = "vpc", subnet = theSubnet, tags = listOf(tag("Name", "server1"), tag("Capability", "Management"),
+                        tag("Client", "WDS"), tag("Environment", "Prod"))).apply {
+                    this.first().price = 0.832f
+                },
+                matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
+                    this.first().price = 0.4f
+                },
+                matchedInstances(count = 1, az = "ap-southeastt-1a", id = "ghi1", tags = listOf(tag("Name", "server3"))).apply {
+                    this.first().matched = true
+                    this.first().price = 0.3f
+                }
+        ).flatten()
+//
+        on { reservedInstances } doReturn countedReservations(count = 3, type = "t2.large").apply {
+            this.first().unmatchedCount = 1
+            this.first().computeUnits = 4.0f
+        }
 
-//        on { instances } doReturn listOf(
-//                matchedInstances(count = 1, type = "m3.large", privateIpAddress = "10.11.12.13", dnsName = "ec2-1-2-3-4", az = "us-west-1a",
-//                        id = "abc1", vpcId = "vpc", subnet = theSubnet, tags = listOf(tag("Name", "server1"), tag("Capability", "Management"),
-//                        tag("Client", "WDS"), tag("Environment", "Prod"))).apply {
-//                    this.first().price = 0.832f
-//                },
-//                matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
-//                    this.first().price = 0.4f
-//                },
-//                matchedInstances(count = 1, az = "ap-southeastt-1a", id = "ghi1", tags = listOf(tag("Name", "server3"))).apply {
-//                    this.first().matched = true
-//                    this.first().price = 0.3f
-//                }
-//        ).flatten()
-////
-//        on { reservedInstances } doReturn countedReservations(count = 3, type = "t2.large").apply {
-//            this.first().unmatchedCount = 1
-//            this.first().computeUnits = 4.0f
-//        }
-//
-//        on { loadBalancers } doReturn listOf(
-//                InstancedLoadBalancer(LoadBalancerDescription.builder()
-//                        .loadBalancerName("theELB")
-//                        .dnsName("dns-name")
-//                        .listenerDescriptions(listOf(
-//                                ListenerDescription.builder()
-//                                    .listener(Listener.builder().protocol("HTTP").loadBalancerPort(80).instancePort(8080).build())
-//                                    .build()
-//                                , ListenerDescription.builder()
-//                                .listener(Listener.builder().protocol("HTTPS").loadBalancerPort(443).instancePort(8443).build())
-//                                .build()))
-//                        .build()
-//                , Location(Profile("test"), Region.US_WEST_1), "Classic")
-//        )
-//
-//        on { databases } doReturn listOf(
-//                RDSInstance(DBInstance.builder()
-//                        .dbInstanceIdentifier("myDatabase")
-//                        .dbInstanceClass("db.t2.small")
-//                        .engine("MySQL")
-//                        .engineVersion("5.7.3")
-//                        .multiAZ(false)
-//                        .allocatedStorage(50)
-//                        .availabilityZone("us-west-1b")
-//                        .endpoint(software.amazon.awssdk.services.rds.model.Endpoint.builder()
-//                                        .address("myDatabase.cdcdqwde.compute.amazonaws.com")
-//                                        .port(3306)
-//                                        .build())
-//                        .build()
-//                , Location(Profile("test"), Region.US_WEST_1))
-//        )
-//
-//        on { domainNames } doReturn listOf(
-//                DomainName(ResourceRecordSet.builder()
-//                    .name("my.domain.name")
-//                    .type("CNAME")
-//                    .ttl(600)
-//                    .resourceRecords(listOf(ResourceRecord.builder().value("somewhere.somewhere.com").build()))
-//                    .build()
-//                )
-//        )
-//
-//        on { volumes } doReturn listOf(
-//                EBSVolume(Volume.builder()
-//                        .volumeType("standard")
-//                        .volumeId("1234abc")
-//                        .size(50)
-//                        .iops(30)
-//                        .encrypted(false)
-//                        .state("in-use")
-//                        .attachments(listOf(VolumeAttachment.builder().build()))
-//                        .tags(listOf(tag("Name", "aVolume")))
-//                        .build()
-//                , Location(Profile("test"), Region.US_WEST_1)).apply {
-//                    attachedInstances = matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
-//                        this.first().price = 0.4f
-//                    }
-//                }
-//        )
-//
-//        on { caches } doReturn listOf(
-//                Cache(CacheCluster.builder()
-//                    .cacheClusterId("clusterId")
-//                    .configurationEndpoint(software.amazon.awssdk.services.elasticache.model.Endpoint.builder()
-//                            .address("mycache.amazon.com")
-//                            .port(11211)
-//                            .build())
-//
-//                    .cacheNodeType("cache.m1.small")
-//                    .engine("memcached")
-//                    .engineVersion("1.4.5")
-//                    .cacheClusterStatus("available")
-//                    .numCacheNodes(3)
-//                            .build()
-//                , Location(Profile("test"), Region.US_WEST_1))
-//        )
-//
-//        on { checkResults} doReturn listOf(
-//                AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
-//        )
-//
-//        on { stacks } doReturn listOf(
-//                CFStack(Stack.builder()
-//                    .stackId("123stack")
-//                    .stackName("MyCFStack")
-//                    .stackStatus("CREATE_COMPLETE")
-//                    .build()
-//                , Location(Profile("test"), Region.US_WEST_1))
-//        )
-//
-//        on { updateTime } doReturn LocalDateTime.now()
-//
-//        on { inError } doReturn true
-//        on { errorMessage } doReturn "something went wrong"
+        on { loadBalancers } doReturn listOf(
+                InstancedLoadBalancer(LoadBalancerDescription.builder()
+                        .loadBalancerName("theELB")
+                        .dnsName("dns-name")
+                        .listenerDescriptions(listOf(
+                                ListenerDescription.builder()
+                                    .listener(Listener.builder().protocol("HTTP").loadBalancerPort(80).instancePort(8080).build())
+                                    .build()
+                                , ListenerDescription.builder()
+                                .listener(Listener.builder().protocol("HTTPS").loadBalancerPort(443).instancePort(8443).build())
+                                .build()))
+                        .build()
+                , Location(Profile("test"), Region.US_WEST_1), "Classic")
+        )
+
+        on { databases } doReturn listOf(
+                RDSInstance(DBInstance.builder()
+                        .dbInstanceIdentifier("myDatabase")
+                        .dbInstanceClass("db.t2.small")
+                        .engine("MySQL")
+                        .engineVersion("5.7.3")
+                        .multiAZ(false)
+                        .allocatedStorage(50)
+                        .availabilityZone("us-west-1b")
+                        .endpoint(software.amazon.awssdk.services.rds.model.Endpoint.builder()
+                                        .address("myDatabase.cdcdqwde.compute.amazonaws.com")
+                                        .port(3306)
+                                        .build())
+                        .build()
+                , Location(Profile("test"), Region.US_WEST_1))
+        )
+
+        on { domainNames } doReturn listOf(
+                DomainName(ResourceRecordSet.builder()
+                    .name("my.domain.name")
+                    .type("CNAME")
+                    .ttl(600)
+                    .resourceRecords(listOf(ResourceRecord.builder().value("somewhere.somewhere.com").build()))
+                    .build()
+                )
+        )
+
+        on { volumes } doReturn listOf(
+                EBSVolume(Volume.builder()
+                        .volumeType("standard")
+                        .volumeId("1234abc")
+                        .size(50)
+                        .iops(30)
+                        .encrypted(false)
+                        .state("in-use")
+                        .attachments(listOf(VolumeAttachment.builder().build()))
+                        .tags(listOf(tag("Name", "aVolume")))
+                        .build()
+                , Location(Profile("test"), Region.US_WEST_1)).apply {
+                    attachedInstances = matchedInstances(count = 1, az = "eu-west-1b", id = "def1", tags = listOf(tag("Name", "server2")), state = "stopped").apply {
+                        this.first().price = 0.4f
+                    }
+                }
+        )
+
+        on { caches } doReturn listOf(
+                Cache(CacheCluster.builder()
+                    .cacheClusterId("clusterId")
+                    .configurationEndpoint(software.amazon.awssdk.services.elasticache.model.Endpoint.builder()
+                            .address("mycache.amazon.com")
+                            .port(11211)
+                            .build())
+
+                    .cacheNodeType("cache.m1.small")
+                    .engine("memcached")
+                    .engineVersion("1.4.5")
+                    .cacheClusterStatus("available")
+                    .numCacheNodes(3)
+                            .build()
+                , Location(Profile("test"), Region.US_WEST_1))
+        )
+
+        on { checkResults} doReturn listOf(
+                AdvisorResult(Check("an Id", "A check for something"), "eu-west-1", "EC2", "myServer", "This server is broken", "$100", "Green")
+        )
+
+        on { stacks } doReturn listOf(
+                CFStack(Stack.builder()
+                    .stackId("123stack")
+                    .stackName("MyCFStack")
+                    .stackStatus("CREATE_COMPLETE")
+                    .build()
+                , Location(Profile("test"), Region.US_WEST_1))
+        )
+
+        on { updateTime } doReturn LocalDateTime.now()
+
+        on { inError } doReturn true
+        on { errorMessage } doReturn "something went wrong"
 
     }
 
